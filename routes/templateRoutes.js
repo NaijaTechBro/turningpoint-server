@@ -1,9 +1,17 @@
+
+
 const express = require("express");
 const router = express.Router();
-const { getTemplates } = require("../controllers/templateController");
-const { protect } = require("../middlewares/authMiddleware");
+const { getTemplates, createTemplate, deleteTemplate } = require("../controllers/templateController");
+const { protect, authorize } = require("../middlewares/authMiddleware");
 
-// All logged-in staff need to be able to see the list of available tests
-router.get("/", protect, getTemplates);
+// PUBLIC ENTRANCE: No 'protect' middleware here!
+// Anyone on the internet can see the list of tests
+router.get("/public", getTemplates); 
+
+// PROTECTED ENTRANCES: Only logged-in staff
+router.get("/", protect, getTemplates); // For staff dashboards
+router.post("/", protect, authorize('Admin'), createTemplate);
+router.delete("/:id", protect, authorize('Admin'), deleteTemplate);
 
 module.exports = router;

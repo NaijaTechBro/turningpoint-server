@@ -303,8 +303,47 @@ const getAllTestRequests = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get all test requests for a specific patient
+// @route   GET /api/v1/test-requests/patient/:patientId
+// @access  Private
+const getPatientTestRequests = asyncHandler(async (req, res) => {
+    const tests = await TestRequest.find({ patient: req.params.patientId })
+        .populate('template', 'testName category')
+        .sort('-createdAt');
+
+    res.status(200).json({ success: true, count: tests.length, data: tests });
+});
+
+// @desc    Public tracking for patients
+// @route   GET /api/v1/test-requests/public/track/:labRef
+// @access  Public
+const trackTestPublic = asyncHandler(async (req, res) => {
+    // We strictly search by the unique Lab Reference receipt code
+    const test = await TestRequest.findOne({ labReference: req.params.labRef.toUpperCase() })
+        .populate('template', 'testName');
+    
+    if (!test) {
+        res.status(404);
+        throw new Error("Invalid Lab Reference. Please check your receipt.");
+    }
+
+    // Only return non-sensitive metadata to the public frontend
+    res.status(200).json({
+        success: true,
+        data: {
+            _id: test._id,
+            labReference: test.labReference,
+            status: test.status,
+            // ADDED THE '?' TO PREVENT CRASHES IF TEMPLATE IS DELETED:
+            testName: test.template?.testName || 'Unknown / Deleted Test',
+            date: test.createdAt
+        }
+    });
+});
+
+
 // Don't forget to export it at the bottom!
 module.exports = { 
     createTestRequest, getTestByBarcode, enterTestResult, 
-    verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests
+    verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic,
 };
