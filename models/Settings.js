@@ -1,0 +1,11 @@
+const mongoose = require('mongoose');
+
+const SettingsSchema = new mongoose.Schema({
+    singleton: { type: String, default: 'main_settings', unique: true }, 
+    paymentProvider: { type: String, enum: ['paystack', 'flutterwave', 'stripe'], default: 'paystack' },
+    payoutType: { type: String, enum: ['manual', 'automatic'], default: 'manual' },
+    emailProvider: { type: String, enum: ['nodemailer', 'brevo'], default: 'brevo' },
+});
+
+const Settings = mongoose.model('Settings', SettingsSchema);
+module.exports = Settings;
