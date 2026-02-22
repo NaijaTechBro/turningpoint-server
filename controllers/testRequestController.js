@@ -286,8 +286,25 @@ const sendReportToPatient = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Get all test requests (For Receptionist & Scientist Dashboards)
+// @route   GET /api/v1/test-requests/all
+// @access  Private (Receptionist, LabScientist, Admin)
+const getAllTestRequests = asyncHandler(async (req, res) => {
+    // We populate the patient and template so the frontend can display their names
+    const testRequests = await TestRequest.find()
+        .populate('patient', 'firstName lastName hospitalNumber')
+        .populate('template', 'testName category')
+        .sort('-createdAt'); // Sort by newest first
+
+    res.status(200).json({
+        success: true,
+        count: testRequests.length,
+        data: testRequests
+    });
+});
+
 // Don't forget to export it at the bottom!
 module.exports = { 
     createTestRequest, getTestByBarcode, enterTestResult, 
-    verifyTestResult, downloadTestReport, sendReportToPatient 
+    verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests
 };
