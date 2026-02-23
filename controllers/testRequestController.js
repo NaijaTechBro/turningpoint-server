@@ -154,8 +154,8 @@ const downloadTestReport = asyncHandler(async (req, res) => {
     doc.pipe(res);
 
     // --- PDF Header ---
-    doc.fontSize(24).font('Helvetica-Bold').fillColor('#0056b3').text('Turning Point Diagnostics', { align: 'center' });
-    doc.fontSize(10).fillColor('#666666').text('123 Health Avenue, Lagos, Nigeria | +234 800 000 0000', { align: 'center' });
+    doc.fontSize(24).font('Helvetica-Bold').fillColor('#eb8a1b').text('TurningPoint Health Services', { align: 'center' });
+    doc.fontSize(10).fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos. | +234 818 224 6491', { align: 'center' });
     doc.moveDown(2);
 
     // --- Patient Details ---
@@ -212,8 +212,8 @@ const generatePDFBuffer = (testRequest) => {
         doc.on('error', reject);
 
         // --- Draw the PDF (Same as your download controller!) ---
-        doc.fontSize(24).font('Helvetica-Bold').fillColor('#0056b3').text('Turning Point Diagnostics', { align: 'center' });
-        doc.fontSize(10).fillColor('#666666').text('123 Health Avenue | Contact: +234 800 000 0000', { align: 'center' });
+        doc.fontSize(24).font('Helvetica-Bold').fillColor('#eb8a1b').text('TurningPoint Health Services', { align: 'center' });
+        doc.fontSize(10).fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos. | +234 818 224 6491', { align: 'center' });
         doc.moveDown(2);
 
         doc.fontSize(12).fillColor('#000000');

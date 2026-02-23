@@ -49,7 +49,7 @@ const {
     downloadTestReport,
     sendReportToPatient,
     getPatientTestRequests,
-    trackTestPublic // <-- Added this import
+    trackTestPublic 
 } = require("../controllers/testRequestController");
 const { protect, authorize } = require("../middlewares/authMiddleware");
 

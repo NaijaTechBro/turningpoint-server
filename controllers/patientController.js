@@ -20,7 +20,7 @@ const registerPatient = asyncHandler(async (req, res) => {
             await sendEmail({
                 send_to: email,
                 name: `${firstName} ${lastName}`,
-                subject: "Welcome to Turning Point Diagnostics",
+                subject: "Welcome to TurningPoint Health Services!",
                 sent_from: "Turning Point <no-reply@turningpoint.com>", // Update with your actual email
                 reply_to: "support@turningpoint.com",
                 template: "welcomeTemplate", // Ensure you have welcomeTemplate.handlebars in your /emails folder
