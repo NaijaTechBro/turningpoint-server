@@ -28,6 +28,8 @@ const startServer = async () => {
 
         const allowedOrigins = [
             'http://localhost:5173',
+            "https://turningpointhealth.site",
+            "http://www.turningpointhealth.site",
             process.env.FRONTEND_URL
         ];
 
