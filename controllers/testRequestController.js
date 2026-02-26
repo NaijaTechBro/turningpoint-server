@@ -3,6 +3,8 @@ const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
 const Patient = require("../models/Patient");
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs = require('fs');
 
 const createTestRequest = asyncHandler(async (req, res) => {
     // FIXED: We now pull 'template' from the body, not 'testName'
@@ -130,6 +132,113 @@ const verifyTestResult = asyncHandler(async (req, res) => {
     });
 });
 
+// // @desc    Generate and stream PDF Report
+// // @route   GET /api/v1/test-requests/:id/pdf
+// // @access  Private (All Staff)
+// const downloadTestReport = asyncHandler(async (req, res) => {
+//     const testRequest = await TestRequest.findById(req.params.id)
+//         .populate('patient')
+//         .populate('template')
+//         .populate('enteredBy', 'firstName lastName')
+//         .populate('verifiedBy', 'firstName lastName');
+
+//     if (!testRequest || testRequest.status !== 'VERIFIED') {
+//         res.status(404);
+//         throw new Error("Report not found or not yet verified");
+//     }
+
+//     // Set headers to stream the PDF directly to the browser
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', `inline; filename=${testRequest.labReference}-Report.pdf`);
+
+//     // Initialize PDF Document
+//     const doc = new PDFDocument({ margin: 50 });
+//     doc.pipe(res);
+
+//     // --- PDF Header ---
+//     doc.fontSize(24).font('Helvetica-Bold').fillColor('#eb8a1b').text('TurningPoint Health Services', { align: 'center' });
+//     doc.fontSize(10).fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos. | +234 818 224 6491', { align: 'center' });
+//     doc.moveDown(2);
+
+//     // --- Patient Details ---
+//     doc.fontSize(12).fillColor('#000000');
+//     doc.text(`Patient Name: ${testRequest.patient.firstName} ${testRequest.patient.lastName}`);
+//     doc.text(`Hospital Number: ${testRequest.patient.hospitalNumber}`);
+//     doc.text(`Lab Reference: ${testRequest.labReference}`);
+//     doc.text(`Date Verified: ${new Date(testRequest.updatedAt).toLocaleDateString()}`);
+//     doc.moveDown(2);
+
+//     // --- Test Title ---
+//     doc.fontSize(16).font('Helvetica-Bold').text(`${testRequest.template.testName} Report`, { align: 'center', underline: true });
+//     doc.moveDown(1);
+
+//     // --- Dynamic Results Layout ---
+//     doc.fontSize(12).font('Helvetica-Bold');
+//     doc.text('Test Parameter', 50, doc.y, { continued: true, width: 200 });
+//     doc.text('Result', 250, doc.y, { continued: true, width: 100 });
+//     doc.text('Reference Range', 350, doc.y);
+//     doc.moveDown(0.5);
+    
+//     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+//     doc.moveDown(0.5);
+
+//     doc.font('Helvetica');
+//     testRequest.template.schemaDefinition.forEach(field => {
+//         const resultValue = testRequest.resultData[field.fieldName] || 'N/A';
+//         const unit = field.unit ? ` ${field.unit}` : '';
+        
+//         doc.text(field.label, 50, doc.y, { continued: true, width: 200 });
+//         doc.text(`${resultValue}${unit}`, 250, doc.y, { continued: true, width: 100 });
+//         doc.text(field.referenceRange || '-', 350, doc.y);
+//         doc.moveDown(0.5);
+//     });
+
+//     doc.moveDown(3);
+
+//     // --- Signatures ---
+//     doc.font('Helvetica-Oblique').text(`Analyzed By: ${testRequest.enteredBy.firstName} ${testRequest.enteredBy.lastName} (Scientist)`);
+//     //doc.text(`Verified By: ${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName} (Manager)`);
+
+//     // Finalize the PDF and end the stream
+//     doc.end();
+// });
+
+// // Add this helper function right above your new controller
+// const generatePDFBuffer = (testRequest) => {
+//     return new Promise((resolve, reject) => {
+//         const doc = new PDFDocument({ margin: 50 });
+//         const buffers = [];
+        
+//         doc.on('data', buffers.push.bind(buffers));
+//         doc.on('end', () => resolve(Buffer.concat(buffers)));
+//         doc.on('error', reject);
+
+//         // --- Draw the PDF (Same as your download controller!) ---
+//         doc.fontSize(24).font('Helvetica-Bold').fillColor('#eb8a1b').text('TurningPoint Health Services', { align: 'center' });
+//         doc.fontSize(10).fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos. | +234 818 224 6491', { align: 'center' });
+//         doc.moveDown(2);
+
+//         doc.fontSize(12).fillColor('#000000');
+//         doc.text(`Patient Name: ${testRequest.patient.firstName} ${testRequest.patient.lastName}`);
+//         doc.text(`Hospital Number: ${testRequest.patient.hospitalNumber}`);
+//         doc.text(`Lab Reference: ${testRequest.labReference}`);
+//         doc.moveDown(2);
+
+//         doc.fontSize(16).font('Helvetica-Bold').text(`${testRequest.template.testName} Report`, { align: 'center', underline: true });
+//         doc.moveDown(1);
+
+//         doc.fontSize(12).font('Helvetica');
+//         testRequest.template.schemaDefinition.forEach(field => {
+//             const resultValue = testRequest.resultData[field.fieldName] || 'N/A';
+//             const unit = field.unit ? ` ${field.unit}` : '';
+//             doc.text(`${field.label}: `, { continued: true }).font('Helvetica-Bold').text(`${resultValue}${unit}`);
+//             doc.font('Helvetica');
+//         });
+
+//         doc.end();
+//     });
+// };
+
 // @desc    Generate and stream PDF Report
 // @route   GET /api/v1/test-requests/:id/pdf
 // @access  Private (All Staff)
@@ -145,11 +254,9 @@ const downloadTestReport = asyncHandler(async (req, res) => {
         throw new Error("Report not found or not yet verified");
     }
 
-    // Set headers to stream the PDF directly to the browser
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=${testRequest.labReference}-Report.pdf`);
 
-    // Initialize PDF Document
     const doc = new PDFDocument({ margin: 50 });
     doc.pipe(res);
 
@@ -158,26 +265,40 @@ const downloadTestReport = asyncHandler(async (req, res) => {
     doc.fontSize(10).fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos. | +234 818 224 6491', { align: 'center' });
     doc.moveDown(2);
 
-    // --- Patient Details ---
-    doc.fontSize(12).fillColor('#000000');
-    doc.text(`Patient Name: ${testRequest.patient.firstName} ${testRequest.patient.lastName}`);
-    doc.text(`Hospital Number: ${testRequest.patient.hospitalNumber}`);
-    doc.text(`Lab Reference: ${testRequest.labReference}`);
-    doc.text(`Date Verified: ${new Date(testRequest.updatedAt).toLocaleDateString()}`);
-    doc.moveDown(2);
+    // --- Patient Details (2-Column Layout) ---
+    doc.fontSize(11).fillColor('#000000');
+    const startY = doc.y; // Capture the current Y position for alignment
 
-    // --- Test Title ---
-    doc.fontSize(16).font('Helvetica-Bold').text(`${testRequest.template.testName} Report`, { align: 'center', underline: true });
+    // Left Column
+    doc.font('Helvetica-Bold').text('Patient Name: ', 50, startY, { continued: true })
+       .font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`);
+    
+    doc.font('Helvetica-Bold').text('Hospital Number: ', 50, startY + 20, { continued: true })
+       .font('Helvetica').text(`${testRequest.patient.hospitalNumber}`);
+
+    // Right Column
+    doc.font('Helvetica-Bold').text('Lab Reference: ', 320, startY, { continued: true })
+       .font('Helvetica').text(`${testRequest.labReference}`);
+    
+    doc.font('Helvetica-Bold').text('Date Verified: ', 320, startY + 20, { continued: true })
+       .font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString()}`);
+
+    // Manually push Y down past the columns and reset X to the left margin
+    doc.y = startY + 60;
+    doc.x = 50;
+
+    // --- Test Title (Bold Orange) ---
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#eb8a1b').text(`${testRequest.template.testName} Report`, 50, doc.y, { align: 'center', underline: true });
     doc.moveDown(1);
 
     // --- Dynamic Results Layout ---
-    doc.fontSize(12).font('Helvetica-Bold');
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000'); // Reset to black for table
     doc.text('Test Parameter', 50, doc.y, { continued: true, width: 200 });
     doc.text('Result', 250, doc.y, { continued: true, width: 100 });
     doc.text('Reference Range', 350, doc.y);
     doc.moveDown(0.5);
     
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#cccccc').stroke();
     doc.moveDown(0.5);
 
     doc.font('Helvetica');
@@ -194,14 +315,12 @@ const downloadTestReport = asyncHandler(async (req, res) => {
     doc.moveDown(3);
 
     // --- Signatures ---
-    doc.font('Helvetica-Oblique').text(`Analyzed By: ${testRequest.enteredBy.firstName} ${testRequest.enteredBy.lastName} (Scientist)`);
-    doc.text(`Verified By: ${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName} (Manager)`);
+    doc.font('Helvetica-Oblique').text(`Analyzed By: ${testRequest.enteredBy?.firstName || 'Lab'} ${testRequest.enteredBy?.lastName || 'Scientist'} (Scientist)`, 50, doc.y);
 
-    // Finalize the PDF and end the stream
     doc.end();
 });
 
-// Add this helper function right above your new controller
+// Helper function for Email attachment
 const generatePDFBuffer = (testRequest) => {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ margin: 50 });
@@ -211,31 +330,61 @@ const generatePDFBuffer = (testRequest) => {
         doc.on('end', () => resolve(Buffer.concat(buffers)));
         doc.on('error', reject);
 
-        // --- Draw the PDF (Same as your download controller!) ---
+        // --- PDF Header ---
         doc.fontSize(24).font('Helvetica-Bold').fillColor('#eb8a1b').text('TurningPoint Health Services', { align: 'center' });
         doc.fontSize(10).fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos. | +234 818 224 6491', { align: 'center' });
         doc.moveDown(2);
 
-        doc.fontSize(12).fillColor('#000000');
-        doc.text(`Patient Name: ${testRequest.patient.firstName} ${testRequest.patient.lastName}`);
-        doc.text(`Hospital Number: ${testRequest.patient.hospitalNumber}`);
-        doc.text(`Lab Reference: ${testRequest.labReference}`);
-        doc.moveDown(2);
+        // --- Patient Details (2-Column Layout) ---
+        doc.fontSize(11).fillColor('#000000');
+        const startY = doc.y;
 
-        doc.fontSize(16).font('Helvetica-Bold').text(`${testRequest.template.testName} Report`, { align: 'center', underline: true });
+        // Left Column
+        doc.font('Helvetica-Bold').text('Patient Name: ', 50, startY, { continued: true })
+           .font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`);
+        
+        doc.font('Helvetica-Bold').text('Hospital Number: ', 50, startY + 20, { continued: true })
+           .font('Helvetica').text(`${testRequest.patient.hospitalNumber}`);
+
+        // Right Column
+        doc.font('Helvetica-Bold').text('Lab Reference: ', 320, startY, { continued: true })
+           .font('Helvetica').text(`${testRequest.labReference}`);
+        
+        doc.font('Helvetica-Bold').text('Date Verified: ', 320, startY + 20, { continued: true })
+           .font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString()}`);
+
+        doc.y = startY + 60;
+        doc.x = 50;
+
+        // --- Test Title (Bold Orange) ---
+        doc.fontSize(16).font('Helvetica-Bold').fillColor('#eb8a1b').text(`${testRequest.template.testName} Report`, 50, doc.y, { align: 'center', underline: true });
         doc.moveDown(1);
 
-        doc.fontSize(12).font('Helvetica');
+        // --- Dynamic Results Layout ---
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000'); 
+        doc.text('Test Parameter', 50, doc.y, { continued: true, width: 200 });
+        doc.text('Result', 250, doc.y, { continued: true, width: 100 });
+        doc.text('Reference Range', 350, doc.y);
+        doc.moveDown(0.5);
+        
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#cccccc').stroke();
+        doc.moveDown(0.5);
+
+        doc.font('Helvetica');
         testRequest.template.schemaDefinition.forEach(field => {
             const resultValue = testRequest.resultData[field.fieldName] || 'N/A';
             const unit = field.unit ? ` ${field.unit}` : '';
-            doc.text(`${field.label}: `, { continued: true }).font('Helvetica-Bold').text(`${resultValue}${unit}`);
-            doc.font('Helvetica');
+            
+            doc.text(field.label, 50, doc.y, { continued: true, width: 200 });
+            doc.text(`${resultValue}${unit}`, 250, doc.y, { continued: true, width: 100 });
+            doc.text(field.referenceRange || '-', 350, doc.y);
+            doc.moveDown(0.5);
         });
 
         doc.end();
     });
 };
+
 
 // @desc    Email the verified PDF report to the patient
 // @route   POST /api/v1/test-requests/:id/send-report
