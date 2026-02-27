@@ -1,9 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Template = require('./models/Template'); // Adjust path if your models are elsewhere
+const Template = require('./models/Template'); 
 
 const templates = [
-    // 1. MALARIA PARASITE (Simple Select)
     {
         testCode: 'MP',
         testName: 'Malaria Parasite',
