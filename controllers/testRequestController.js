@@ -157,6 +157,11 @@ const downloadTestReport = asyncHandler(async (req, res) => {
         throw new Error("Report not found or not yet verified");
     }
 
+    if (!testRequest.template) {
+        res.status(400);
+        throw new Error("Cannot generate PDF: The original test template was deleted from the database.");
+    }
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=${testRequest.labReference}-Report.pdf`);
 
@@ -177,6 +182,11 @@ const downloadPublicTestReport = asyncHandler(async (req, res) => {
     if (!testRequest || (testRequest.status !== 'VERIFIED' && testRequest.status !== 'DELIVERED')) {
         res.status(404);
         throw new Error("Report not available for download.");
+    }
+
+    if (!testRequest.template) {
+        res.status(400);
+        throw new Error("Cannot generate PDF: Document structure missing.");
     }
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -351,6 +361,11 @@ const sendReportToPatient = asyncHandler(async (req, res) => {
         throw new Error("Cannot send unverified reports. Please verify first.");
     }
 
+    if (!testRequest.template) {
+        res.status(400);
+        throw new Error("Cannot send email: Test template structure is missing.");
+    }
+    
     if (!testRequest.patient.email) {
         res.status(400);
         throw new Error("This patient does not have an email address on file.");
