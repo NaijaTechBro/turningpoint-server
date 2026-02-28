@@ -109,17 +109,31 @@ const updatePatient = asyncHandler(async (req, res) => {
         throw new Error("Patient record not found");
     }
 
-    // Update fields while preventing modification of the hospitalNumber
+    // Explicitly handle all fields, allowing empty strings to overwrite existing data if the receptionist deletes it
+    const updatedData = {
+        firstName: req.body.firstName || patient.firstName,
+        lastName: req.body.lastName || patient.lastName,
+        gender: req.body.gender || patient.gender,
+        
+        // These can be cleared/empty now
+        age: req.body.age !== undefined ? req.body.age : patient.age,
+        email: req.body.email !== undefined ? req.body.email : patient.email,
+        phone: req.body.phone !== undefined ? req.body.phone : patient.phone,
+        referringDoctor: req.body.referringDoctor !== undefined ? req.body.referringDoctor : patient.referringDoctor,
+        referringClinic: req.body.referringClinic !== undefined ? req.body.referringClinic : patient.referringClinic,
+        dateReferred: req.body.dateReferred || patient.dateReferred // Fallback to existing if blank
+    };
+
+    // If dateReferred is passed as an empty string from the frontend, remove the field from the update payload
+    if (updatedData.dateReferred === '') {
+        delete updatedData.dateReferred;
+        // Also unset it in the database
+        await Patient.updateOne({ _id: req.params.id }, { $unset: { dateReferred: 1 } });
+    }
+
     const updatedPatient = await Patient.findByIdAndUpdate(
         req.params.id,
-        {
-            firstName: req.body.firstName || patient.firstName,
-            lastName: req.body.lastName || patient.lastName,
-            email: req.body.email || patient.email,
-            phone: req.body.phone || patient.phone,
-            gender: req.body.gender || patient.gender,
-            dateOfBirth: req.body.dateOfBirth || patient.dateOfBirth
-        },
+        updatedData,
         { new: true, runValidators: true }
     );
 

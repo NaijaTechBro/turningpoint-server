@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
 const Patient = require("../models/Patient");
+const Template = require('../models/Template');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
