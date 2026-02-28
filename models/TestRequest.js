@@ -6,6 +6,7 @@ const testRequestSchema = new mongoose.Schema({
     // REPLACE testName WITH THIS:
     template: { type: mongoose.Schema.Types.ObjectId, ref: 'Template', required: true },
     
+    testPrice: { type: Number, required: true, default: 0 },
     labReference: { type: String, required: true, unique: true },
     barcodeImage: { type: String },
     status: { 

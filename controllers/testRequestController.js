@@ -17,6 +17,13 @@ const createTestRequest = asyncHandler(async (req, res) => {
         throw new Error("Patient not found");
     }
 
+    // NEW: Fetch the template to get the current price
+    const templateDoc = await Template.findById(template);
+    if (!templateDoc) {
+        res.status(404);
+        throw new Error("Test template not found");
+    }
+
     // 2. Generate the Auto-Incrementing Lab Reference
     const totalTests = await TestRequest.countDocuments(); 
     const labReference = `TURPOINT-${String(totalTests + 1).padStart(4, '0')}`;
@@ -43,6 +50,7 @@ const createTestRequest = asyncHandler(async (req, res) => {
     const testRequest = await TestRequest.create({
         patient: patient._id,
         template, // FIXED: We pass the template ID to Mongoose here
+        testPrice: templateDoc.price, // FIXED: We set the price from the template      
         labReference,
         barcodeImage: barcodeBase64,
         requestedBy: req.user.id
