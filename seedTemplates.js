@@ -69,19 +69,19 @@ const templates = [
         category: 'Haematology',
         price: 5000,
         schemaDefinition: [
-            { fieldName: 'pcv', label: 'PCV', inputType: 'number' },
-            { fieldName: 'hb', label: 'Hb', inputType: 'number' },
-            { fieldName: 'wbc', label: 'WBC', inputType: 'number' },
-            { fieldName: 'neutrophil', label: 'Neutrophil', inputType: 'number' },
-            { fieldName: 'lymphocyte', label: 'Lymphocyte', inputType: 'number' },
-            { fieldName: 'monocyte', label: 'Monocyte', inputType: 'number' },
-            { fieldName: 'eosinophil', label: 'Eosinophil', inputType: 'number' },
-            { fieldName: 'basophil', label: 'Basophil', inputType: 'number' },
-            { fieldName: 'platelet', label: 'Platelet', inputType: 'number' },
-            { fieldName: 'rbc', label: 'RBC', inputType: 'number' },
-            { fieldName: 'mchc', label: 'MCHC', inputType: 'number' },
-            { fieldName: 'mch', label: 'MCH', inputType: 'number' },
-            { fieldName: 'mcv', label: 'MCV', inputType: 'number' }
+            { fieldName: 'pcv', label: 'PCV', inputType: 'text', unit: '%', referenceRange: '38 - 50' },
+            { fieldName: 'hb', label: 'Hb', inputType: 'text', unit: 'g/dl', referenceRange: '13.0 - 17.0' },
+            { fieldName: 'wbc', label: 'WBC', inputType: 'text', unit: 'X 10^9/L', referenceRange: '4.0 - 10.0' },
+            { fieldName: 'neutrophil', label: 'Neutrophil', inputType: 'text', unit: '%', referenceRange: '40 - 70' },
+            { fieldName: 'lymphocyte', label: 'Lymphocyte', inputType: 'text', unit: '%', referenceRange: '20 - 50' },
+            { fieldName: 'monocyte', label: 'Monocyte', inputType: 'text', unit: '%', referenceRange: '2 - 10' },
+            { fieldName: 'eosinophil', label: 'Eosinophil', inputType: 'text', unit: '%', referenceRange: '1 - 8' },
+            { fieldName: 'basophil', label: 'Basophil', inputType: 'text', unit: '%', referenceRange: '0 - 1' },
+            { fieldName: 'platelet', label: 'Platelet', inputType: 'text', unit: 'X 10^9/L', referenceRange: '150 - 400' },
+            { fieldName: 'rbc', label: 'RBC', inputType: 'text', unit: 'X 10^12/L', referenceRange: '4.1 - 5.7' },
+            { fieldName: 'mchc', label: 'MCHC', inputType: 'text', unit: 'g/dl', referenceRange: '32.0 - 35.5' },
+            { fieldName: 'mch', label: 'MCH', inputType: 'text', unit: 'pg', referenceRange: '27.8 - 33.8' },
+            { fieldName: 'mcv', label: 'MCV', inputType: 'text', unit: 'fL', referenceRange: '83.9 - 99.1' }
         ]
     },
     {
@@ -90,19 +90,19 @@ const templates = [
         category: 'Haematology',
         price: 5000,
         schemaDefinition: [
-            { fieldName: 'pcv', label: 'PCV', inputType: 'number' },
-            { fieldName: 'hb', label: 'Hb', inputType: 'number' },
-            { fieldName: 'wbc', label: 'WBC', inputType: 'number' },
-            { fieldName: 'neutrophil', label: 'Neutrophil', inputType: 'number' },
-            { fieldName: 'lymphocyte', label: 'Lymphocyte', inputType: 'number' },
-            { fieldName: 'monocyte', label: 'Monocyte', inputType: 'number' },
-            { fieldName: 'eosinophil', label: 'Eosinophil', inputType: 'number' },
-            { fieldName: 'basophil', label: 'Basophil', inputType: 'number' },
-            { fieldName: 'platelet', label: 'Platelet', inputType: 'number' },
-            { fieldName: 'rbc', label: 'RBC', inputType: 'number' },
-            { fieldName: 'mchc', label: 'MCHC', inputType: 'number' },
-            { fieldName: 'mch', label: 'MCH', inputType: 'number' },
-            { fieldName: 'mcv', label: 'MCV', inputType: 'number' }
+            { fieldName: 'pcv', label: 'PCV', inputType: 'text', unit: '%', referenceRange: '34 - 45' },
+            { fieldName: 'hb', label: 'Hb', inputType: 'text', unit: 'g/dl', referenceRange: '11.0 - 15.0' },
+            { fieldName: 'wbc', label: 'WBC', inputType: 'text', unit: 'X 10^9/L', referenceRange: '4.0 - 10.0' },
+            { fieldName: 'neutrophil', label: 'Neutrophil', inputType: 'text', unit: '%', referenceRange: '40 - 70' },
+            { fieldName: 'lymphocyte', label: 'Lymphocyte', inputType: 'text', unit: '%', referenceRange: '20 - 50' },
+            { fieldName: 'monocyte', label: 'Monocyte', inputType: 'text', unit: '%', referenceRange: '2 - 10' },
+            { fieldName: 'eosinophil', label: 'Eosinophil', inputType: 'text', unit: '%', referenceRange: '1 - 8' },
+            { fieldName: 'basophil', label: 'Basophil', inputType: 'text', unit: '%', referenceRange: '0 - 1' },
+            { fieldName: 'platelet', label: 'Platelet', inputType: 'text', unit: 'X 10^9/L', referenceRange: '150 - 400' },
+            { fieldName: 'rbc', label: 'RBC', inputType: 'text', unit: 'X 10^12/L', referenceRange: '3.7 - 5.1' },
+            { fieldName: 'mchc', label: 'MCHC', inputType: 'text', unit: 'g/dl', referenceRange: '32.2 - 36.2' },
+            { fieldName: 'mch', label: 'MCH', inputType: 'text', unit: 'pg', referenceRange: '26.9 - 33.3' },
+            { fieldName: 'mcv', label: 'MCV', inputType: 'text', unit: 'fL', referenceRange: '82.6 - 99.1' }
         ]
     },
     {
@@ -154,36 +154,33 @@ const templates = [
             { fieldName: 'vldl', label: 'VLDL', inputType: 'number', unit: 'mg/dl', referenceRange: '2 - 30' } 
         ]
     },
-    {
+   {
         testCode: 'RENAL-EXT',
         testName: 'Kidney Function Test (E/U/CR)',
         category: 'Chemistry',
         price: 13000,
         schemaDefinition: [
-            { fieldName: 'na', label: 'Na+', inputType: 'number', unit: 'mmol/L', referenceRange: '135 - 145' },
-            { fieldName: 'cl', label: 'Cl-', inputType: 'number', unit: 'mmol/L', referenceRange: '98 - 108' },
-            { fieldName: 'k', label: 'K+', inputType: 'number', unit: 'mmol/L', referenceRange: '3.5 - 5.5' },
-            { fieldName: 'hco3', label: 'HCO3-', inputType: 'number', unit: 'mmol/L', referenceRange: '21 - 28' },
-            { fieldName: 'urea', label: 'Urea', inputType: 'number', unit: 'mg/dl', referenceRange: '10 - 55' },
-            { fieldName: 'creatinine', label: 'Creatinine', inputType: 'number', unit: 'mg/dl', referenceRange: '0.6-1.3 (Male), 0.6-1.2 (Female)' },
-            { fieldName: 'uricAcid', label: 'Uric Acid', inputType: 'number', unit: 'mg/dl', referenceRange: '2.0-5.0 (Child), 2.5-6.5 (Adult F), 3.5-7.5 (Adult M)' }
+            { fieldName: 'na', label: 'Na+', inputType: 'text', unit: 'mmol/L', referenceRange: '135 - 145' },
+            { fieldName: 'cl', label: 'Cl-', inputType: 'text', unit: 'mmol/L', referenceRange: '98 - 108' },
+            { fieldName: 'k', label: 'K+', inputType: 'text', unit: 'mmol/L', referenceRange: '3.5 - 5.5' },
+            { fieldName: 'hco3', label: 'HCO3-', inputType: 'text', unit: 'mmol/L', referenceRange: '21 - 28' },
+            { fieldName: 'urea', label: 'Urea', inputType: 'text', unit: 'mg/dl', referenceRange: '10 - 55' },
+            { fieldName: 'creatinine', label: 'Creatinine', inputType: 'text', unit: 'mg/dl', referenceRange: '0.6-1.3 (Male), 0.6-1.2 (Female)' }
         ]
     },
-
     // ==========================================
     // 5. IMMUNOASSAY & SPECIALIZED TESTS
     // ==========================================
-    {
+   {
         testCode: 'HORM-F',
         testName: 'Female Hormonal Profile',
         category: 'Immunoassay',
         price: 38000,
         schemaDefinition: [
-            { fieldName: 'lh', label: 'LH', inputType: 'number', unit: 'mIU/ml', referenceRange: '2.1-12.7 (Follicular), 1.0-12.0 (Luteal)' },
-            { fieldName: 'fsh', label: 'FSH', inputType: 'number', unit: 'mIU/ml', referenceRange: '2.9-12.0 (Follicular), 1.5-7.0 (Luteal)' },
-            { fieldName: 'prolactin', label: 'Prolactin', inputType: 'number', unit: 'ng/ml', referenceRange: '5.0 - 35.0' },
-            { fieldName: 'progesterone', label: 'Progesterone', inputType: 'number', unit: 'ng/ml', referenceRange: '0.2-1.4 (Follicular), 4-25 (Luteal)' },
-            { fieldName: 'estradiol', label: 'Estradiol', inputType: 'number', unit: 'pg/ml', referenceRange: '10.1-177 (Follicular), 64.8-564 (Ovulation), 42-310 (Luteal)' }
+            { fieldName: 'lh', label: 'LH', inputType: 'text', unit: 'mIU/ml', referenceRange: '2.1-12.7 (Follicular), 1.0-12.0 (Luteal)' },
+            { fieldName: 'fsh', label: 'FSH', inputType: 'text', unit: 'mIU/ml', referenceRange: '2.9-12.0 (Follicular), 1.5-7.0 (Luteal)' },
+            { fieldName: 'prolactin', label: 'Prolactin', inputType: 'text', unit: 'ng/ml', referenceRange: '5.0 - 35.0' },
+            { fieldName: 'progesterone', label: 'Progesterone', inputType: 'text', unit: 'ng/ml', referenceRange: '0.2-1.4 (Follicular), 4-25 (Luteal)' }
         ]
     },
     {

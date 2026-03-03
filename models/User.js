@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
     lastName: { type: String, required: true },
     role: { 
         type: String, 
-        enum: ['Admin', 'Receptionist', 'LabScientist'], 
+        enum: ['Admin', 'Receptionist', 'LabScientist','Sonographer', 'LabTechnician'], 
         default: 'Receptionist' 
     },
     status: { 

@@ -62,7 +62,7 @@ router.get("/public/pdf/:id", downloadPublicTestReport); // <-- FIXED: Attached 
 // 2. PROTECTED ROUTES (Must come AFTER public routes)
 // ==========================================
 router.post("/", protect, authorize('Admin', 'Receptionist'), createTestRequest);
-router.get("/all", protect, authorize('Admin', 'Receptionist', 'LabScientist'), getAllTestRequests);
+router.get("/all", protect, authorize('Admin', 'Receptionist', 'LabScientist', 'Sonographer', 'LabTechnician'), getAllTestRequests);
 router.get("/patient/:patientId", protect, authorize('Admin', 'Receptionist', 'LabScientist'), getPatientTestRequests);
 
 // Dynamic Routes (These catch anything else, so they must be at the bottom)
