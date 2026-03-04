@@ -408,7 +408,7 @@ const sendReportToPatient = asyncHandler(async (req, res) => {
 const getAllTestRequests = asyncHandler(async (req, res) => {
     // We populate the patient and template so the frontend can display their names
     const testRequests = await TestRequest.find()
-        .populate('patient', 'firstName lastName hospitalNumber')
+        .populate('patient', 'firstName lastName hospitalNumber email phone')
         .populate('template', 'testName category')
         .sort('-createdAt'); // Sort by newest first
 
