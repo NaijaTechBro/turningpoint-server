@@ -347,7 +347,7 @@ const verifyTestResult = asyncHandler(async (req, res) => {
     });
 });
 
-// @desc    Email the verified PDF report to the patient
+// @desc    Email the verified PDF report to the patient (WhatsApp handled by frontend)
 // @route   POST /api/v1/test-requests/:id/send-report
 // @access  Private (Receptionist, Admin)
 const sendReportToPatient = asyncHandler(async (req, res) => {
@@ -355,7 +355,7 @@ const sendReportToPatient = asyncHandler(async (req, res) => {
         .populate('patient')
         .populate('template');
 
-    // FIX: Allow sending if it's VERIFIED -OR- already DELIVERED (for resending)
+    // Check if report is valid for sending
     if (!testRequest || (testRequest.status !== 'VERIFIED' && testRequest.status !== 'DELIVERED')) {
         res.status(400);
         throw new Error("Cannot send unverified reports. Please verify first.");
@@ -363,42 +363,41 @@ const sendReportToPatient = asyncHandler(async (req, res) => {
 
     if (!testRequest.template) {
         res.status(400);
-        throw new Error("Cannot send email: Test template structure is missing.");
-    }
-    
-    if (!testRequest.patient.email) {
-        res.status(400);
-        throw new Error("This patient does not have an email address on file.");
+        throw new Error("Cannot send report: Test template structure is missing.");
     }
 
-    // 1. Generate the PDF into a raw data buffer
-    const pdfBuffer = await generatePDFBuffer(testRequest);
+    let emailSent = false;
 
-    // 2. Send the Email via your Notification Service
-    const { sendEmail } = require("../services/notificationService");
-    
-    await sendEmail({
-        send_to: testRequest.patient.email,
-        name: `${testRequest.patient.firstName} ${testRequest.patient.lastName}`,
-        subject: `Your Lab Results: ${testRequest.template.testName}`,
-        sent_from: "Turning Point <no-reply@turningpoint.com>",
-        reply_to: "support@turningpoint.com",
-        template: "resultTemplate",
-        attachments: [
-            {
-                filename: `${testRequest.labReference}-Results.pdf`,
-                content: pdfBuffer
-            }
-        ]
-    });
+    // ONLY attempt to send the email if the patient actually has an email address on file
+    if (testRequest.patient.email) {
+        try {
+            const pdfBuffer = await generatePDFBuffer(testRequest);
+            const { sendEmail } = require("../services/notificationService");
+            
+            await sendEmail({
+                send_to: testRequest.patient.email,
+                name: `${testRequest.patient.firstName} ${testRequest.patient.lastName}`,
+                subject: `Your Lab Results: ${testRequest.template.testName}`,
+                sent_from: "Turning Point <no-reply@turningpoint.com>",
+                reply_to: "support@turningpoint.com",
+                template: "resultTemplate",
+                attachments: [{ filename: `${testRequest.labReference}-Results.pdf`, content: pdfBuffer }]
+            });
+            emailSent = true;
+        } catch (error) {
+            console.error("Email dispatch failed:", error);
+            // We don't throw here so the status can still update to Delivered if they use WhatsApp
+        }
+    }
 
-    // 3. Update Status
+    // Always update Status to Delivered because the receptionist triggered a dispatch action
     testRequest.status = 'DELIVERED';
     await testRequest.save();
 
     res.status(200).json({
         success: true,
-        message: `Report successfully emailed to ${testRequest.patient.email}`
+        message: emailSent ? "Email sent successfully." : "Marked as delivered (No email on file).",
+        emailSent
     });
 });
 
