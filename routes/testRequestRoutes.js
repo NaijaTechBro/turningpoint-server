@@ -63,13 +63,13 @@ router.get("/public/pdf/:id", downloadPublicTestReport); // <-- FIXED: Attached 
 // ==========================================
 router.post("/", protect, authorize('Admin', 'Receptionist'), createTestRequest);
 router.get("/all", protect, authorize('Admin', 'Receptionist', 'LabScientist', 'Sonographer', 'LabTechnician'), getAllTestRequests);
-router.get("/patient/:patientId", protect, authorize('Admin', 'Receptionist', 'LabScientist'), getPatientTestRequests);
+router.get("/patient/:patientId", protect, authorize('Admin', 'Receptionist', 'LabScientist', 'Sonographer', 'LabTechnician'), getPatientTestRequests);
 
 // Dynamic Routes (These catch anything else, so they must be at the bottom)
-router.get("/:labReference", protect, authorize('Admin', 'LabScientist'), getTestByBarcode);
-router.put("/:id/results", protect, authorize('Admin', 'LabScientist'), enterTestResult);
-router.post("/:id/send-report", protect, authorize('Admin', 'Receptionist', 'LabScientist'), sendReportToPatient);
-router.put("/:id/verify", protect, authorize('Admin', 'LabScientist'), verifyTestResult);
+router.get("/:labReference", protect, authorize('Admin', 'LabScientist', 'Sonographer', 'LabTechnician'), getTestByBarcode);
+router.put("/:id/results", protect, authorize('Admin', 'LabScientist', 'Sonographer', 'LabTechnician'), enterTestResult);
+router.post("/:id/send-report", protect, authorize('Admin', 'Receptionist', 'LabScientist', 'Sonographer', 'LabTechnician'), sendReportToPatient);
+router.put("/:id/verify", protect, authorize('Admin', 'LabScientist', 'Sonographer', 'LabTechnician'), verifyTestResult);
 router.get("/:id/pdf", protect, downloadTestReport);
 
 module.exports = router;
