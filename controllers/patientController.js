@@ -8,7 +8,7 @@ const registerPatient = asyncHandler(async (req, res) => {
 
     const count = await Patient.countDocuments();
     const currentYear = new Date().getFullYear();
-    const hospitalNumber = `TPD-${currentYear}-${String(count + 1).padStart(4, '0')}`;
+    const hospitalNumber = `TPH-${currentYear}-${String(count + 1).padStart(4, '0')}`;
 
     const patient = await Patient.create({
         hospitalNumber, firstName, lastName, dateOfBirth, gender, email, phone
