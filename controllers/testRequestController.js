@@ -579,7 +579,6 @@
 // };
 
 
-
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -589,9 +588,8 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 
-// --- REUSABLE PDF BUILDER ---
+// --- REUSABLE PDF BUILDER (Fixes Alignment & Text Spilling) ---
 const buildPDFContent = (doc, testRequest) => {
-    // We now use TWO separate images
     const watermarkPath = path.join(__dirname, '../assets/icon.png'); 
     const letterheadPath = path.join(__dirname, '../assets/letterhead.png'); 
     
@@ -600,7 +598,7 @@ const buildPDFContent = (doc, testRequest) => {
         try {
             if (fs.existsSync(watermarkPath)) {
                 doc.save();
-                doc.opacity(0.10); // 10% opacity for a subtle background watermark
+                doc.opacity(0.10); // 10% opacity for a bold but readable watermark
                 // Centers a massive 400px wide icon in the middle of the page
                 doc.image(watermarkPath, (doc.page.width - 400) / 2, (doc.page.height - 400) / 2, { width: 400 });
                 doc.restore();
@@ -614,26 +612,35 @@ const buildPDFContent = (doc, testRequest) => {
     // Ensure the watermark is drawn on any new pages if the report is very long
     doc.on('pageAdded', addWatermark);
 
-    // 1. Header with FULL LETTERHEAD IMAGE
+    // ==========================================
+    // 1. HEADER (FULLY DYNAMIC LETTERHEAD)
+    // ==========================================
+    doc.y = 30; // Start at the very top of the page
+    
     try {
         if (fs.existsSync(letterheadPath)) {
-            // Draws the image starting at the very top left, spanning 500px wide
-            doc.image(letterheadPath, 45, 30, { width: 500 }); 
-        } else {
-            console.warn("Letterhead image not found! Expected at:", letterheadPath);
+            // By omitting the absolute X and Y coordinates here, PDFKit will 
+            // automatically calculate how tall the image is and magically push 
+            // the 'doc.y' cursor completely below it! No more overlap!
+            doc.image(letterheadPath, { width: 500, align: 'center' }); 
         }
     } catch (err) {
         console.warn("Failed to load letterhead:", err.message);
     }
 
-    // Because the letterhead image is tall, we move the starting Y position down to 140
-    // so the patient details don't overlap the image.
-    doc.moveTo(50, 140).lineTo(550, 140).strokeColor('#eeeeee').stroke();
+    // Add a little breathing room below whatever the height of the image was
     doc.moveDown(1);
+    
+    // Draw the separator line exactly below the image
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
+    doc.moveDown(1.5);
 
-    // 2. Patient Details (2-Column Layout)
-    doc.y = 150; // Start patient details safely below the letterhead
+    // ==========================================
+    // 2. PATIENT DETAILS (2-Column Layout)
+    // ==========================================
     doc.fontSize(10).fillColor('#000000');
+    
+    // Grab the new, automatically adjusted Y position
     const startY = doc.y;
 
     // Left Column
@@ -661,12 +668,16 @@ const buildPDFContent = (doc, testRequest) => {
 
     doc.y = startY + 80;
 
-    // 3. Test Title (Deep Orange #C04000)
+    // ==========================================
+    // 3. TEST TITLE (Deep, Bold Orange)
+    // ==========================================
     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
     doc.moveDown(1.5);
 
-    // 4. Dynamic Results Layout
+    // ==========================================
+    // 4. DYNAMIC RESULTS LAYOUT
+    // ==========================================
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
     const isTextReportOnly = testRequest.template.schemaDefinition.length === 1 && testRequest.template.schemaDefinition[0].inputType === 'textarea';
@@ -722,7 +733,9 @@ const buildPDFContent = (doc, testRequest) => {
         });
     }
 
-    // 5. Signatures
+    // ==========================================
+    // 5. SIGNATURES
+    // ==========================================
     doc.moveDown(4);
     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
     doc.moveTo(50, doc.y).lineTo(200, doc.y).strokeColor('#000000').stroke();
@@ -1002,7 +1015,6 @@ const trackTestPublic = asyncHandler(async (req, res) => {
     });
 });
 
-// FIXED: I restored 'downloadPublicTestReport' to this exports list!
 module.exports = { 
     createTestRequest, getTestByBarcode, enterTestResult, 
     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
