@@ -449,6 +449,7 @@
 //     createTestRequest, getTestByBarcode, enterTestResult, 
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
+
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -482,52 +483,37 @@ const buildPDFContent = (doc, testRequest) => {
     doc.on('pageAdded', addWatermark);
 
     // ==========================================
-    // 1. HEADER (FULL-WIDTH LETTERHEAD + OVERLAY)
+    // 1. HEADER (FULL-WIDTH LETTERHEAD ONLY)
     // ==========================================
     doc.y = 30; // Start at the very top of the page
-    let afterImageY = 120; // Fallback height
     
     try {
         if (fs.existsSync(letterheadPath)) {
-            // Stretches the image to full width (520) to make the logo big again!
+            // We use the full width (520) so your new design fills the top of the A4 page perfectly.
+            // By omitting X and Y coordinates here, PDFKit automatically places it at doc.y
+            // and moves the cursor safely below it.
             doc.image(letterheadPath, { width: 520, align: 'center' }); 
-            afterImageY = doc.y; // Automatically saves where the bottom of the image is
         }
     } catch (err) {
-        console.warn("Failed to load letterhead:", err.message);
+        console.warn("Failed to load letterhead image:", err.message);
     }
 
-    // --- OVERLAY BOLD ADDRESS ON THE RIGHT ---
-    // We move the cursor back to the top right to overlay this text cleanly over the blank space
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000'); 
+    // Since PDFKit automatically adjusted doc.y after the image, we just need a little breathing room.
+    doc.moveDown(1);
     
-    const rightX = 320; 
-    let rightY = 45; 
-    
-    // Aligned to the right margin for a highly professional look
-    doc.text('5, Oladipo Coker Avenue, Off Durbar Road,', rightX, rightY, { width: 230, align: 'right' });
-    rightY += 14;
-    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, rightY, { width: 230, align: 'right' });
-    rightY += 14;
-    doc.text('Tel: 08182246491, 07098141804', rightX, rightY, { width: 230, align: 'right' });
-    rightY += 14;
-    doc.text('Email: info@turningpointhealth.site', rightX, rightY, { width: 230, align: 'right' });
-    rightY += 14;
-    doc.text('Website: www.turningpointhealth.site', rightX, rightY, { width: 230, align: 'right' });
-
-    // Ensure the cursor drops safely below BOTH the image and the text block
-    doc.y = Math.max(afterImageY, rightY + 20);
-    
-    // Draw the separator line exactly below the header
+    // Draw the separator line exactly below your new, complete letterhead image
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
+
+    // NOTE: All hardcoded address/phone/email text has been removed from here
+    // because you are adding it directly to the letterhead.png file.
 
     // ==========================================
     // 2. PATIENT DETAILS (2-Column Layout)
     // ==========================================
+    // This section remains exactly the same as the base layout you liked.
     doc.fontSize(10).fillColor('#000000');
     
-    // Grab the safe, auto-calculated Y position
     const startY = doc.y;
 
     // ----- Left Column -----
@@ -632,6 +618,7 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Oblique').fontSize(8).text('Verified By', 50, doc.y);
 };
 
+// --- ROUTES ---
 const downloadTestReport = asyncHandler(async (req, res) => {
     const testRequest = await TestRequest.findById(req.params.id)
         .populate('patient')
