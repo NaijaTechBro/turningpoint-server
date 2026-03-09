@@ -11,17 +11,17 @@
 
 // // --- REUSABLE PDF BUILDER (Fixes Alignment & Text Spilling) ---
 // const buildPDFContent = (doc, testRequest) => {
-//     const logoPath = path.join(__dirname, '../assets/logo.png'); 
+//     const watermarkPath = path.join(__dirname, '../assets/icon.png'); 
+//     const letterheadPath = path.join(__dirname, '../assets/letterhead.png'); 
     
 //     // --- HELPER: ADD WATERMARK ---
-//     // We create this as a helper so it can be drawn on Page 1, AND any additional pages
 //     const addWatermark = () => {
 //         try {
-//             if (fs.existsSync(logoPath)) {
+//             if (fs.existsSync(watermarkPath)) {
 //                 doc.save();
-//                 doc.opacity(0.15); // 15% opacity so it is bold but text is still readable over it
-//                 // Centers a massive 400px wide logo in the middle of the page
-//                 doc.image(logoPath, (doc.page.width - 400) / 2, (doc.page.height - 400) / 2, { width: 400 });
+//                 doc.opacity(0.10); // 10% opacity for a bold but readable watermark
+//                 // Centers a massive 400px wide icon in the middle of the page
+//                 doc.image(watermarkPath, (doc.page.width - 400) / 2, (doc.page.height - 400) / 2, { width: 400 });
 //                 doc.restore();
 //             }
 //         } catch (err) {}
@@ -33,37 +33,41 @@
 //     // Ensure the watermark is drawn on any new pages if the report is very long
 //     doc.on('pageAdded', addWatermark);
 
-//     // 1. Header with ENLARGED REAL Image Logo
+//     // ==========================================
+//     // 1. HEADER (FULLY DYNAMIC LETTERHEAD)
+//     // ==========================================
+//     doc.y = 30; // Start at the very top of the page
+    
 //     try {
-//         if (fs.existsSync(logoPath)) {
-//             // Increased width to 90px to make it much larger at the top left
-//             doc.image(logoPath, 45, 30, { width: 90 }); 
+//         if (fs.existsSync(letterheadPath)) {
+//             // By omitting the absolute X and Y coordinates here, PDFKit will 
+//             // automatically calculate how tall the image is and magically push 
+//             // the 'doc.y' cursor completely below it! No more overlap!
+//             doc.image(letterheadPath, { width: 500, align: 'center' }); 
 //         }
 //     } catch (err) {
-//         console.warn("Logo image not found or failed to load:", err.message);
+//         console.warn("Failed to load letterhead:", err.message);
 //     }
 
-//     // Shifted text to the right (X: 145) to make room for the newly enlarged logo
-//     doc.fontSize(24).font('Helvetica-Bold').fillColor('#eb8a1b').text('Turning Point', 145, 45);
-//     doc.fontSize(10).font('Helvetica-Bold').fillColor('#228B22').text('HEALTH SERVICES', 147, 70, { characterSpacing: 2 });
-    
-//     doc.fontSize(9).font('Helvetica').fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road,', 300, 50, { align: 'right' });
-//     doc.text('Amuwo-Odofin Mile 2, Lagos.', 300, 62, { align: 'right' });
-//     doc.text('+234 818 224 6491', 300, 74, { align: 'right' });
-    
-//     doc.moveDown(3);
-//     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
+//     // Add a little breathing room below whatever the height of the image was
 //     doc.moveDown(1);
+    
+//     // Draw the separator line exactly below the image
+//     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
+//     doc.moveDown(1.5);
 
-//     // 2. Patient Details (2-Column Layout)
+//     // ==========================================
+//     // 2. PATIENT DETAILS (2-Column Layout)
+//     // ==========================================
 //     doc.fontSize(10).fillColor('#000000');
+    
+//     // Grab the new, automatically adjusted Y position
 //     const startY = doc.y;
 
 //     // Left Column
 //     doc.font('Helvetica-Bold').text('Patient Name:', 50, startY, { width: 90, continued: false });
 //     doc.font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`, 140, startY);
     
-//     // CHANGED: "Hospital No" to "Lab No"
 //     doc.font('Helvetica-Bold').text('Lab No:', 50, startY + 20, { width: 90, continued: false });
 //     doc.font('Helvetica').text(`${testRequest.patient.hospitalNumber}`, 140, startY + 20);
 
@@ -85,12 +89,16 @@
 
 //     doc.y = startY + 80;
 
-//     // 3. Test Title
-//     doc.fontSize(14).font('Helvetica-Bold').fillColor('#eb8a1b')
+//     // ==========================================
+//     // 3. TEST TITLE (Deep, Bold Orange)
+//     // ==========================================
+//     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
 //        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
 //     doc.moveDown(1.5);
 
-//     // 4. Dynamic Results Layout
+//     // ==========================================
+//     // 4. DYNAMIC RESULTS LAYOUT
+//     // ==========================================
 //     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
 //     const isTextReportOnly = testRequest.template.schemaDefinition.length === 1 && testRequest.template.schemaDefinition[0].inputType === 'textarea';
@@ -146,7 +154,9 @@
 //         });
 //     }
 
-//     // 5. Signatures
+//     // ==========================================
+//     // 5. SIGNATURES
+//     // ==========================================
 //     doc.moveDown(4);
 //     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
 //     doc.moveTo(50, doc.y).lineTo(200, doc.y).strokeColor('#000000').stroke();
@@ -155,7 +165,6 @@
 //     doc.font('Helvetica-Oblique').fontSize(8).text('Verified By', 50, doc.y);
 // };
 
-// // --- RECEPTIONIST/STAFF DOWNLOAD ROUTE ---
 // const downloadTestReport = asyncHandler(async (req, res) => {
 //     const testRequest = await TestRequest.findById(req.params.id)
 //         .populate('patient')
@@ -182,7 +191,6 @@
 //     doc.end();
 // });
 
-// // --- NEW: PUBLIC PATIENT DOWNLOAD ROUTE ---
 // const downloadPublicTestReport = asyncHandler(async (req, res) => {
 //     const testRequest = await TestRequest.findById(req.params.id)
 //         .populate('patient')
@@ -208,7 +216,6 @@
 //     doc.end();
 // });
 
-// // --- EMAIL BUFFER ROUTE ---
 // const generatePDFBuffer = (testRequest) => {
 //     return new Promise((resolve, reject) => {
 //         const doc = new PDFDocument({ margin: 50 });
@@ -433,150 +440,7 @@
 //     createTestRequest, getTestByBarcode, enterTestResult, 
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
-// // --- REUSABLE PDF BUILDER (Fixes Alignment & Text Spilling) ---
-// const buildPDFContent = (doc, testRequest) => {
-//     // We now use TWO separate images: the square icon for the watermark, and the full banner for the top.
-//     const watermarkPath = path.join(__dirname, '../assets/icon.png'); 
-//     const letterheadPath = path.join(__dirname, '../assets/letterhead.png'); 
-    
-//     // --- HELPER: ADD WATERMARK (Uses the square icon.png) ---
-//     const addWatermark = () => {
-//         try {
-//             if (fs.existsSync(watermarkPath)) {
-//                 doc.save();
-//                 doc.opacity(0.10); // 10% opacity for a subtle, professional background watermark
-//                 // Centers a massive 400px wide icon in the middle of the page
-//                 doc.image(watermarkPath, (doc.page.width - 400) / 2, (doc.page.height - 400) / 2, { width: 400 });
-//                 doc.restore();
-//             }
-//         } catch (err) {}
-//     };
 
-//     // Draw watermark on the first page immediately
-//     addWatermark();
-    
-//     // Ensure the watermark is drawn on any new pages if the report is very long
-//     doc.on('pageAdded', addWatermark);
-
-//     // 1. Header with FULL LETTERHEAD IMAGE
-//     try {
-//         if (fs.existsSync(letterheadPath)) {
-//             // We set width to 260 to span across the top left beautifully as a letterhead
-//             doc.image(letterheadPath, 45, 30, { width: 260 }); 
-//         }
-//     } catch (err) {
-//         console.warn("Letterhead image not found or failed to load:", err.message);
-//     }
-
-//     // NOTE: We deleted the manual "Turning Point" orange text here because your image already has it!
-    
-//     // Keep the address on the right side
-//     doc.fontSize(9).font('Helvetica').fillColor('#666666').text('5, Oladipo Coker Avenue, Off Durbar Road,', 320, 45, { align: 'right' });
-//     doc.text('Amuwo-Odofin Mile 2, Lagos.', 320, 57, { align: 'right' });
-//     doc.text('+234 818 224 6491', 320, 69, { align: 'right' });
-    
-//     doc.moveDown(3);
-//     doc.moveTo(50, doc.y + 15).lineTo(550, doc.y + 15).strokeColor('#eeeeee').stroke();
-//     doc.moveDown(2);
-
-//     // 2. Patient Details (2-Column Layout)
-//     doc.fontSize(10).fillColor('#000000');
-//     const startY = doc.y;
-
-//     // Left Column
-//     doc.font('Helvetica-Bold').text('Patient Name:', 50, startY, { width: 90, continued: false });
-//     doc.font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`, 140, startY);
-    
-//     doc.font('Helvetica-Bold').text('Lab No:', 50, startY + 20, { width: 90, continued: false });
-//     doc.font('Helvetica').text(`${testRequest.patient.hospitalNumber}`, 140, startY + 20);
-
-//     const ageDisplay = testRequest.patient.age ? `${testRequest.patient.age} Yrs` : 'N/A';
-//     doc.font('Helvetica-Bold').text('Age / Gender:', 50, startY + 40, { width: 90, continued: false });
-//     doc.font('Helvetica').text(`${ageDisplay} / ${testRequest.patient.gender}`, 140, startY + 40);
-
-//     // Right Column
-//     doc.font('Helvetica-Bold').text('Lab Reference:', 320, startY, { width: 90, continued: false });
-//     doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY);
-    
-//     doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 20, { width: 90, continued: false });
-//     doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
-
-//     if (testRequest.patient.referringDoctor) {
-//         doc.font('Helvetica-Bold').text('Ref. Doctor:', 320, startY + 40, { width: 90, continued: false });
-//         doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 40);
-//     }
-
-//     doc.y = startY + 80;
-
-//     // 3. Test Title (Deep Orange #C04000)
-//     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
-//        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
-//     doc.moveDown(1.5);
-
-//     // 4. Dynamic Results Layout
-//     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
-    
-//     const isTextReportOnly = testRequest.template.schemaDefinition.length === 1 && testRequest.template.schemaDefinition[0].inputType === 'textarea';
-
-//     if (isTextReportOnly) {
-//         const field = testRequest.template.schemaDefinition[0];
-//         const resultValue = testRequest.resultData?.[field.fieldName] || 'No report entered.';
-        
-//         doc.font('Helvetica').text(resultValue, 50, doc.y, {
-//             width: 500,
-//             align: 'justify',
-//             lineGap: 4
-//         });
-//     } else {
-//         const tableHeaderY = doc.y;
-//         doc.text('TEST PARAMETER', 50, tableHeaderY, { width: 190 });
-//         doc.text('RESULT', 250, tableHeaderY, { width: 140 });
-//         doc.text('REFERENCE RANGE', 400, tableHeaderY, { width: 150 });
-//         doc.moveDown(0.5);
-//         doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#cccccc').stroke();
-//         doc.moveDown(0.5);
-
-//         doc.font('Helvetica');
-//         testRequest.template.schemaDefinition.forEach(field => {
-//             const resultValue = testRequest.resultData?.[field.fieldName] || 'N/A';
-//             const unit = field.unit ? ` ${field.unit}` : '';
-            
-//             const labelText = field.label || '';
-//             const valueText = `${resultValue}${unit}`;
-//             const refText = field.referenceRange || '-';
-
-//             const h1 = doc.heightOfString(labelText, { width: 190 });
-//             const h2 = doc.heightOfString(valueText, { width: 140 });
-//             const h3 = doc.heightOfString(refText, { width: 150 });
-//             const rowHeight = Math.max(h1, h2, h3);
-            
-//             if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom - 50) {
-//                 doc.addPage();
-//             }
-
-//             const currentY = doc.y;
-
-//             if (field.inputType === 'textarea') {
-//                 doc.font('Helvetica-Bold').text(labelText, 50, currentY, { width: 500 });
-//                 doc.font('Helvetica').text(valueText, 50, currentY + 15, { width: 500 });
-//                 doc.y = currentY + 15 + doc.heightOfString(valueText, { width: 500 }) + 10;
-//             } else {
-//                 doc.text(labelText, 50, currentY, { width: 190 });
-//                 doc.font('Helvetica-Bold').text(valueText, 250, currentY, { width: 140 });
-//                 doc.font('Helvetica').text(refText, 400, currentY, { width: 150 });
-//                 doc.y = currentY + rowHeight + 10;
-//             }
-//         });
-//     }
-
-//     // 5. Signatures
-//     doc.moveDown(4);
-//     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
-//     doc.moveTo(50, doc.y).lineTo(200, doc.y).strokeColor('#000000').stroke();
-//     doc.moveDown(0.5);
-//     doc.font('Helvetica-Bold').text(scientistName, 50, doc.y);
-//     doc.font('Helvetica-Oblique').fontSize(8).text('Verified By', 50, doc.y);
-// };
 
 
 const asyncHandler = require("express-async-handler");
@@ -599,7 +463,6 @@ const buildPDFContent = (doc, testRequest) => {
             if (fs.existsSync(watermarkPath)) {
                 doc.save();
                 doc.opacity(0.10); // 10% opacity for a bold but readable watermark
-                // Centers a massive 400px wide icon in the middle of the page
                 doc.image(watermarkPath, (doc.page.width - 400) / 2, (doc.page.height - 400) / 2, { width: 400 });
                 doc.restore();
             }
@@ -619,31 +482,40 @@ const buildPDFContent = (doc, testRequest) => {
     
     try {
         if (fs.existsSync(letterheadPath)) {
-            // By omitting the absolute X and Y coordinates here, PDFKit will 
-            // automatically calculate how tall the image is and magically push 
-            // the 'doc.y' cursor completely below it! No more overlap!
+            // By omitting absolute X and Y coordinates, PDFKit automatically centers the image 
+            // AND calculates its exact height, pushing the doc.y cursor safely below it!
             doc.image(letterheadPath, { width: 500, align: 'center' }); 
         }
     } catch (err) {
         console.warn("Failed to load letterhead:", err.message);
     }
 
-    // Add a little breathing room below whatever the height of the image was
+    doc.moveDown(0.5);
+
+    // ==========================================
+    // 2. BOLD ADDRESS & PHONE NUMBERS
+    // ==========================================
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000')
+       .text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos.', { align: 'center' });
+    
+    doc.fontSize(10).font('Helvetica-Bold')
+       .text('Tel: 08182246491, 07098141804', { align: 'center' });
+
     doc.moveDown(1);
     
-    // Draw the separator line exactly below the image
+    // Draw the separator line exactly below the address
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
 
     // ==========================================
-    // 2. PATIENT DETAILS (2-Column Layout)
+    // 3. PATIENT DETAILS (2-Column Layout)
     // ==========================================
     doc.fontSize(10).fillColor('#000000');
     
-    // Grab the new, automatically adjusted Y position
+    // Grab the safe, auto-calculated Y position
     const startY = doc.y;
 
-    // Left Column
+    // ----- Left Column -----
     doc.font('Helvetica-Bold').text('Patient Name:', 50, startY, { width: 90, continued: false });
     doc.font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`, 140, startY);
     
@@ -654,29 +526,30 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Bold').text('Age / Gender:', 50, startY + 40, { width: 90, continued: false });
     doc.font('Helvetica').text(`${ageDisplay} / ${testRequest.patient.gender}`, 140, startY + 40);
 
-    // Right Column
+    // ----- Right Column -----
     doc.font('Helvetica-Bold').text('Lab Reference:', 320, startY, { width: 90, continued: false });
     doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY);
     
     doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 20, { width: 90, continued: false });
     doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
 
+    // Referring Doctor placed safely directly under the Date Verified
     if (testRequest.patient.referringDoctor) {
-        doc.font('Helvetica-Bold').text('Ref. Doctor:', 320, startY + 40, { width: 90, continued: false });
+        doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 40, { width: 90, continued: false });
         doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 40);
     }
 
-    doc.y = startY + 80;
+    doc.y = startY + 70; // Push cursor safely down past the entire patient details block
 
     // ==========================================
-    // 3. TEST TITLE (Deep, Bold Orange)
+    // 4. TEST TITLE (Deep, Bold Orange)
     // ==========================================
     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
     doc.moveDown(1.5);
 
     // ==========================================
-    // 4. DYNAMIC RESULTS LAYOUT
+    // 5. DYNAMIC RESULTS LAYOUT
     // ==========================================
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
@@ -734,7 +607,7 @@ const buildPDFContent = (doc, testRequest) => {
     }
 
     // ==========================================
-    // 5. SIGNATURES
+    // 6. SIGNATURES
     // ==========================================
     doc.moveDown(4);
     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
@@ -744,6 +617,7 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Oblique').fontSize(8).text('Verified By', 50, doc.y);
 };
 
+// --- ROUTES ---
 const downloadTestReport = asyncHandler(async (req, res) => {
     const testRequest = await TestRequest.findById(req.params.id)
         .populate('patient')
@@ -863,8 +737,9 @@ const createTestRequest = asyncHandler(async (req, res) => {
 const getTestByBarcode = asyncHandler(async (req, res) => {
     const { labReference } = req.params;
 
+    // Added referringDoctor to populate array just in case frontend needs it!
     const testRequest = await TestRequest.findOne({ labReference })
-        .populate('patient', 'firstName lastName hospitalNumber gender age')
+        .populate('patient', 'firstName lastName hospitalNumber gender age referringDoctor')
         .populate('template', 'testName category schemaDefinition');
 
     if (!testRequest) {
@@ -975,7 +850,7 @@ const sendReportToPatient = asyncHandler(async (req, res) => {
 
 const getAllTestRequests = asyncHandler(async (req, res) => {
     const testRequests = await TestRequest.find()
-        .populate('patient', 'firstName lastName hospitalNumber email phone')
+        .populate('patient', 'firstName lastName hospitalNumber email phone referringDoctor')
         .populate('template', 'testName category')
         .sort('-createdAt'); 
 
