@@ -460,117 +460,109 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 
-// --- REUSABLE PDF BUILDER ---
+// --- REUSABLE PDF BUILDER (Fixes Alignment & Text Spilling) ---
 const buildPDFContent = (doc, testRequest) => {
     const watermarkPath = path.join(__dirname, '../assets/icon.png'); 
     const letterheadPath = path.join(__dirname, '../assets/letterhead.png'); 
     
-    // ==========================================
-    // HELPER: ADD WATERMARK
-    // ==========================================
+    // --- HELPER: ADD WATERMARK ---
     const addWatermark = () => {
         try {
             if (fs.existsSync(watermarkPath)) {
                 doc.save();
-                doc.opacity(0.12); // Bold but readable
-                // Centers a massive 400px wide icon in the middle of the page
+                doc.opacity(0.10); // 10% opacity for a bold but readable watermark
                 doc.image(watermarkPath, (doc.page.width - 400) / 2, (doc.page.height - 400) / 2, { width: 400 });
                 doc.restore();
             }
         } catch (err) {}
     };
 
-    doc.on('pageAdded', addWatermark);
+    // Draw watermark on the first page immediately
     addWatermark();
+    
+    // Ensure the watermark is drawn on any new pages if the report is very long
+    doc.on('pageAdded', addWatermark);
 
     // ==========================================
-    // 1. SPLIT HEADER (Logo Left | Address Right)
+    // 1. HEADER (LETTERHEAD IMAGE + RIGHT ADDRESS)
     // ==========================================
-    doc.y = 35; 
+    doc.y = 30; // Start at the very top of the page
     
-    // LEFT SIDE: The Logo Image
     try {
         if (fs.existsSync(letterheadPath)) {
-            // Constrain width so it only takes up the left portion
-            doc.image(letterheadPath, 45, 30, { width: 270 }); 
+            // Maintains the large 500px width you requested
+            doc.image(letterheadPath, { width: 500, align: 'center' }); 
         }
     } catch (err) {
         console.warn("Failed to load letterhead:", err.message);
     }
 
-    // VERTICAL SEPARATOR LINE
-    doc.moveTo(330, 35).lineTo(330, 95).lineWidth(1).strokeColor('#cccccc').stroke();
+    // Save the bottom position of the image so we don't mess up the page layout
+    const afterImageY = doc.y;
 
-    // RIGHT SIDE: Address & Contact Info
-    const rightX = 340;
-    let rightY = 35;
-    doc.fontSize(8).font('Helvetica').fillColor('#555555');
+    // --- BOLD ADDRESS & PHONE NUMBERS ON THE RIGHT ---
+    // We move the cursor back to the top right to overlay this text clearly
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
-    doc.text('5, Oladipo Coker Avenue,', rightX, rightY); rightY += 12;
-    doc.text('Off Durbar Road,', rightX, rightY); rightY += 12;
-    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, rightY); rightY += 12;
-    doc.text('Tel: 0818 224 6491, 0808 553 1553', rightX, rightY); rightY += 12;
-    doc.text('E-mail: info@turningpoinths.com', rightX, rightY); rightY += 12;
-    doc.text('Website: www.turningpoinths.com', rightX, rightY);
+    const rightX = 250;
+    let rightY = 40; 
+    
+    doc.text('5, Oladipo Coker Avenue, Off Durbar Road,', rightX, rightY, { width: 300, align: 'right' });
+    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, doc.y + 2, { width: 300, align: 'right' });
+    doc.text('Tel: 08182246491, 07098141804', rightX, doc.y + 2, { width: 300, align: 'right' });
 
-    // HORIZONTAL ORANGE LINE
-    doc.y = 115; 
-    doc.moveTo(45, doc.y).lineTo(550, doc.y).lineWidth(1.5).strokeColor('#C04000').stroke();
+    // Restore the cursor to the bottom of the header space
+    doc.y = Math.max(afterImageY, doc.y) + 15;
+    
+    // Draw the separator line exactly below the header
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
 
     // ==========================================
-    // 2. PATIENT DETAILS (Matching the Photo)
+    // 2. PATIENT DETAILS (2-Column Layout)
     // ==========================================
-    doc.fontSize(9).fillColor('#000000');
+    doc.fontSize(10).fillColor('#000000');
+    
+    // Grab the safe, auto-calculated Y position
     const startY = doc.y;
 
     // ----- Left Column -----
-    doc.font('Helvetica-Bold').text('NAME:', 45, startY, { width: 50, continued: false });
-    doc.font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`, 100, startY);
+    doc.font('Helvetica-Bold').text('Patient Name:', 50, startY, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${testRequest.patient.firstName} ${testRequest.patient.lastName}`, 140, startY);
     
-    doc.font('Helvetica-Bold').text('SEX:', 45, startY + 25, { width: 50, continued: false });
-    doc.font('Helvetica').text(`${testRequest.patient.gender}`, 100, startY + 25);
+    doc.font('Helvetica-Bold').text('Lab No:', 50, startY + 20, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${testRequest.patient.hospitalNumber}`, 140, startY + 20);
 
-    const ageDisplay = testRequest.patient.age ? `${testRequest.patient.age} Yrs` : 'Adult';
-    doc.font('Helvetica-Bold').text('AGE:', 45, startY + 50, { width: 50, continued: false });
-    doc.font('Helvetica').text(`${ageDisplay}`, 100, startY + 50);
+    const ageDisplay = testRequest.patient.age ? `${testRequest.patient.age} Yrs` : 'N/A';
+    doc.font('Helvetica-Bold').text('Age / Gender:', 50, startY + 40, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${ageDisplay} / ${testRequest.patient.gender}`, 140, startY + 40);
 
     // ----- Right Column -----
-    doc.font('Helvetica-Bold').text('REFERRED BY:', 320, startY, { width: 80, continued: false });
-    doc.font('Helvetica').text(`${testRequest.patient.referringDoctor || 'Self'}`, 410, startY);
+    doc.font('Helvetica-Bold').text('Lab Reference:', 320, startY, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY);
     
-    doc.font('Helvetica-Bold').text('LAB NO:', 320, startY + 25, { width: 80, continued: false });
-    doc.font('Helvetica').text(`${testRequest.patient.hospitalNumber}`, 410, startY + 25);
+    doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 20, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
 
-    doc.font('Helvetica-Bold').text('DATE:', 320, startY + 50, { width: 80, continued: false });
-    doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 50);
+    // Referring Doctor placed safely directly under the Date Verified
+    if (testRequest.patient.referringDoctor) {
+        doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 40, { width: 90, continued: false });
+        doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 40);
+    }
 
-    // We still need the internal receipt tracking code somewhere
-    doc.font('Helvetica-Bold').text('REF ID:', 320, startY + 75, { width: 80, continued: false });
-    doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY + 75);
-
-    doc.y = startY + 105; 
+    doc.y = startY + 70; // Push cursor safely down past the entire patient details block
 
     // ==========================================
-    // 3. LABORATORY REPORT HEADER
+    // 3. TEST TITLE (Deep, Bold Orange)
     // ==========================================
-    // Top light gray line
-    doc.moveTo(45, doc.y).lineTo(550, doc.y).lineWidth(0.5).strokeColor('#cccccc').stroke();
-    doc.moveDown(1);
-
-    // Title
-    doc.fontSize(10).font('Helvetica-Bold').fillColor('#003366')
-       .text(`LABORATORY REPORT: ${testRequest.template.testName.toUpperCase()}`, 45, doc.y, { align: 'center' });
-    doc.moveDown(1);
-
-    // Bottom light gray line
-    doc.moveTo(45, doc.y).lineTo(550, doc.y).lineWidth(0.5).strokeColor('#cccccc').stroke();
+    doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
+       .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
     doc.moveDown(1.5);
 
     // ==========================================
     // 4. DYNAMIC RESULTS LAYOUT
     // ==========================================
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000');
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
     const isTextReportOnly = testRequest.template.schemaDefinition.length === 1 && testRequest.template.schemaDefinition[0].inputType === 'textarea';
 
@@ -578,17 +570,19 @@ const buildPDFContent = (doc, testRequest) => {
         const field = testRequest.template.schemaDefinition[0];
         const resultValue = testRequest.resultData?.[field.fieldName] || 'No report entered.';
         
-        doc.font('Helvetica').text(resultValue, 45, doc.y, {
-            width: 505,
+        doc.font('Helvetica').text(resultValue, 50, doc.y, {
+            width: 500,
             align: 'justify',
             lineGap: 4
         });
     } else {
         const tableHeaderY = doc.y;
-        doc.text('TEST PARAMETER', 45, tableHeaderY, { width: 190 });
+        doc.text('TEST PARAMETER', 50, tableHeaderY, { width: 190 });
         doc.text('RESULT', 250, tableHeaderY, { width: 140 });
         doc.text('REFERENCE RANGE', 400, tableHeaderY, { width: 150 });
-        doc.moveDown(0.8);
+        doc.moveDown(0.5);
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#cccccc').stroke();
+        doc.moveDown(0.5);
 
         doc.font('Helvetica');
         testRequest.template.schemaDefinition.forEach(field => {
@@ -604,39 +598,34 @@ const buildPDFContent = (doc, testRequest) => {
             const h3 = doc.heightOfString(refText, { width: 150 });
             const rowHeight = Math.max(h1, h2, h3);
             
-            if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom - 60) {
+            if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom - 50) {
                 doc.addPage();
             }
 
             const currentY = doc.y;
 
             if (field.inputType === 'textarea') {
-                doc.font('Helvetica-Bold').text(labelText, 45, currentY, { width: 500 });
-                doc.font('Helvetica').text(valueText, 45, currentY + 15, { width: 500 });
+                doc.font('Helvetica-Bold').text(labelText, 50, currentY, { width: 500 });
+                doc.font('Helvetica').text(valueText, 50, currentY + 15, { width: 500 });
                 doc.y = currentY + 15 + doc.heightOfString(valueText, { width: 500 }) + 10;
             } else {
-                doc.font('Helvetica-Bold').text(labelText, 45, currentY, { width: 190 });
-                doc.font('Helvetica').text(valueText, 250, currentY, { width: 140 });
+                doc.text(labelText, 50, currentY, { width: 190 });
+                doc.font('Helvetica-Bold').text(valueText, 250, currentY, { width: 140 });
                 doc.font('Helvetica').text(refText, 400, currentY, { width: 150 });
-                doc.y = currentY + rowHeight + 12;
+                doc.y = currentY + rowHeight + 10;
             }
         });
     }
 
     // ==========================================
-    // 5. SIGNATURES (Moved to the Right Side)
+    // 5. SIGNATURES
     // ==========================================
     doc.moveDown(4);
-    // Push the signature block down if it's too close to the bottom
-    if (doc.y > doc.page.height - 100) { doc.addPage(); }
-
-    const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.lastName}, ${testRequest.verifiedBy.firstName}` : 'Lab Scientist';
-    
-    const sigX = 350; // Align right
-    doc.moveTo(sigX, doc.y).lineTo(530, doc.y).lineWidth(1).strokeColor('#000000').stroke();
+    const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
+    doc.moveTo(50, doc.y).lineTo(200, doc.y).strokeColor('#000000').stroke();
     doc.moveDown(0.5);
-    doc.font('Helvetica-Bold').fontSize(10).text(scientistName, sigX, doc.y, { width: 180, align: 'center' });
-    doc.font('Helvetica').fontSize(9).text('Med. Laboratory Scientist', sigX, doc.y, { width: 180, align: 'center' });
+    doc.font('Helvetica-Bold').text(scientistName, 50, doc.y);
+    doc.font('Helvetica-Oblique').fontSize(8).text('Verified By', 50, doc.y);
 };
 
 // --- ROUTES ---
