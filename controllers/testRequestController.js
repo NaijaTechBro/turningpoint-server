@@ -450,7 +450,6 @@
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
 
-
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -484,42 +483,44 @@ const buildPDFContent = (doc, testRequest) => {
     doc.on('pageAdded', addWatermark);
 
     // ==========================================
-    // 1. HEADER (LETTERHEAD IMAGE + RIGHT ADDRESS)
+    // 1. HEADER (FULLY DYNAMIC LETTERHEAD)
     // ==========================================
     doc.y = 30; // Start at the very top of the page
     
     try {
         if (fs.existsSync(letterheadPath)) {
-            // Maintains the large 500px width you requested
+            // By omitting absolute X and Y coordinates, PDFKit automatically centers the image 
+            // AND calculates its exact height, pushing the doc.y cursor safely below it! No overlap!
             doc.image(letterheadPath, { width: 500, align: 'center' }); 
         }
     } catch (err) {
         console.warn("Failed to load letterhead:", err.message);
     }
 
-    // Save the bottom position of the image so we don't mess up the page layout
-    const afterImageY = doc.y;
+    doc.moveDown(0.5);
 
-    // --- BOLD ADDRESS & PHONE NUMBERS ON THE RIGHT ---
-    // We move the cursor back to the top right to overlay this text clearly
-    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
+    // ==========================================
+    // 2. CENTRALIZED ADDRESS & CONTACT INFO
+    // ==========================================
+    // Placed directly below the image so it never overlaps, made bold and centered.
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000')
+       .text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos.', { align: 'center' });
     
-    const rightX = 250;
-    let rightY = 40; 
-    
-    doc.text('5, Oladipo Coker Avenue, Off Durbar Road,', rightX, rightY, { width: 300, align: 'right' });
-    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, doc.y + 2, { width: 300, align: 'right' });
-    doc.text('Tel: 08182246491, 07098141804', rightX, doc.y + 2, { width: 300, align: 'right' });
+    doc.fontSize(10).font('Helvetica-Bold')
+       .text('Tel: 08182246491, 07098141804', { align: 'center' });
 
-    // Restore the cursor to the bottom of the header space
-    doc.y = Math.max(afterImageY, doc.y) + 15;
+    // Added the new Website and Email domain
+    doc.fontSize(10).font('Helvetica-Bold')
+       .text('Email: info@turningpointhealth.site   |   Website: www.turningpointhealth.site', { align: 'center' });
+
+    doc.moveDown(1);
     
-    // Draw the separator line exactly below the header
+    // Draw the separator line exactly below the address block
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
 
     // ==========================================
-    // 2. PATIENT DETAILS (2-Column Layout)
+    // 3. PATIENT DETAILS (2-Column Layout)
     // ==========================================
     doc.fontSize(10).fillColor('#000000');
     
@@ -553,14 +554,14 @@ const buildPDFContent = (doc, testRequest) => {
     doc.y = startY + 70; // Push cursor safely down past the entire patient details block
 
     // ==========================================
-    // 3. TEST TITLE (Deep, Bold Orange)
+    // 4. TEST TITLE (Deep, Bold Orange)
     // ==========================================
     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
     doc.moveDown(1.5);
 
     // ==========================================
-    // 4. DYNAMIC RESULTS LAYOUT
+    // 5. DYNAMIC RESULTS LAYOUT
     // ==========================================
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
@@ -618,7 +619,7 @@ const buildPDFContent = (doc, testRequest) => {
     }
 
     // ==========================================
-    // 5. SIGNATURES
+    // 6. SIGNATURES
     // ==========================================
     doc.moveDown(4);
     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
