@@ -450,6 +450,7 @@
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
 
+
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -483,44 +484,47 @@ const buildPDFContent = (doc, testRequest) => {
     doc.on('pageAdded', addWatermark);
 
     // ==========================================
-    // 1. HEADER (FULLY DYNAMIC LETTERHEAD)
+    // 1. HEADER (LETTERHEAD LEFT | ADDRESS RIGHT)
     // ==========================================
-    doc.y = 30; // Start at the very top of the page
+    const headerY = 35; // Fixed Y position for the top of the header
     
+    // LEFT SIDE: The Logo Image
     try {
         if (fs.existsSync(letterheadPath)) {
-            // By omitting absolute X and Y coordinates, PDFKit automatically centers the image 
-            // AND calculates its exact height, pushing the doc.y cursor safely below it! No overlap!
-            doc.image(letterheadPath, { width: 500, align: 'center' }); 
+            // Reduced width by 20px+ so the text can fit and align properly on the right
+            doc.image(letterheadPath, 45, headerY, { width: 270 }); 
         }
     } catch (err) {
         console.warn("Failed to load letterhead:", err.message);
     }
 
-    doc.moveDown(0.5);
+    // VERTICAL SEPARATOR LINE (Optional: looks neat and separates image from text)
+    doc.moveTo(330, headerY + 5).lineTo(330, headerY + 65).lineWidth(1).strokeColor('#cccccc').stroke();
 
-    // ==========================================
-    // 2. CENTRALIZED ADDRESS & CONTACT INFO
-    // ==========================================
-    // Placed directly below the image so it never overlaps, made bold and centered.
-    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000')
-       .text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos.', { align: 'center' });
+    // RIGHT SIDE: Bold, Legible Address & Contact Info
+    const rightX = 345;
+    let textY = headerY + 5; // Align slightly down from the very top
     
-    doc.fontSize(10).font('Helvetica-Bold')
-       .text('Tel: 08182246491, 07098141804', { align: 'center' });
-
-    // Added the new Website and Email domain
-    doc.fontSize(10).font('Helvetica-Bold')
-       .text('Email: info@turningpointhealth.site   |   Website: www.turningpointhealth.site', { align: 'center' });
-
-    doc.moveDown(1);
+    doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#555555');
     
-    // Draw the separator line exactly below the address block
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
+    doc.text('5, Oladipo Coker Avenue,', rightX, textY); textY += 12;
+    doc.text('Off Durbar Road,', rightX, textY); textY += 12;
+    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, textY); textY += 12;
+    doc.text('Tel: 08182246491, 07098141804', rightX, textY); textY += 12;
+    
+    // Broken into two lines as requested
+    doc.text('Email: info@turningpointhealth.site', rightX, textY); textY += 12;
+    doc.text('Website: www.turningpointhealth.site', rightX, textY);
+
+    // Push the cursor safely below the entire header section
+    doc.y = 125; 
+
+    // Draw the horizontal separator line exactly below the header
+    doc.moveTo(45, doc.y).lineTo(550, doc.y).lineWidth(1).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
 
     // ==========================================
-    // 3. PATIENT DETAILS (2-Column Layout)
+    // 2. PATIENT DETAILS (2-Column Layout)
     // ==========================================
     doc.fontSize(10).fillColor('#000000');
     
@@ -554,14 +558,14 @@ const buildPDFContent = (doc, testRequest) => {
     doc.y = startY + 70; // Push cursor safely down past the entire patient details block
 
     // ==========================================
-    // 4. TEST TITLE (Deep, Bold Orange)
+    // 3. TEST TITLE (Deep, Bold Orange)
     // ==========================================
     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
     doc.moveDown(1.5);
 
     // ==========================================
-    // 5. DYNAMIC RESULTS LAYOUT
+    // 4. DYNAMIC RESULTS LAYOUT
     // ==========================================
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
@@ -619,7 +623,7 @@ const buildPDFContent = (doc, testRequest) => {
     }
 
     // ==========================================
-    // 6. SIGNATURES
+    // 5. SIGNATURES
     // ==========================================
     doc.moveDown(4);
     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
