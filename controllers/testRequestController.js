@@ -450,7 +450,6 @@
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
 
-
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -484,43 +483,44 @@ const buildPDFContent = (doc, testRequest) => {
     doc.on('pageAdded', addWatermark);
 
     // ==========================================
-    // 1. HEADER (LETTERHEAD LEFT | ADDRESS RIGHT)
+    // 1. HEADER (FULL-WIDTH LETTERHEAD + OVERLAY)
     // ==========================================
-    const headerY = 35; // Fixed Y position for the top of the header
+    doc.y = 30; // Start at the very top of the page
+    let afterImageY = 120; // Fallback height
     
-    // LEFT SIDE: The Logo Image
     try {
         if (fs.existsSync(letterheadPath)) {
-            // Reduced width by 20px+ so the text can fit and align properly on the right
-            doc.image(letterheadPath, 45, headerY, { width: 270 }); 
+            // Stretches the image to full width (520) to make the logo big again!
+            doc.image(letterheadPath, { width: 520, align: 'center' }); 
+            afterImageY = doc.y; // Automatically saves where the bottom of the image is
         }
     } catch (err) {
         console.warn("Failed to load letterhead:", err.message);
     }
 
-    // VERTICAL SEPARATOR LINE (Optional: looks neat and separates image from text)
-    doc.moveTo(330, headerY + 5).lineTo(330, headerY + 65).lineWidth(1).strokeColor('#cccccc').stroke();
-
-    // RIGHT SIDE: Bold, Legible Address & Contact Info
-    const rightX = 345;
-    let textY = headerY + 5; // Align slightly down from the very top
+    // --- OVERLAY BOLD ADDRESS ON THE RIGHT ---
+    // We move the cursor back to the top right to overlay this text cleanly over the blank space
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000000'); 
     
-    doc.fontSize(8.5).font('Helvetica-Bold').fillColor('#555555');
+    const rightX = 320; 
+    let rightY = 45; 
     
-    doc.text('5, Oladipo Coker Avenue,', rightX, textY); textY += 12;
-    doc.text('Off Durbar Road,', rightX, textY); textY += 12;
-    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, textY); textY += 12;
-    doc.text('Tel: 08182246491, 07098141804', rightX, textY); textY += 12;
+    // Aligned to the right margin for a highly professional look
+    doc.text('5, Oladipo Coker Avenue, Off Durbar Road,', rightX, rightY, { width: 230, align: 'right' });
+    rightY += 14;
+    doc.text('Amuwo-Odofin Mile 2, Lagos.', rightX, rightY, { width: 230, align: 'right' });
+    rightY += 14;
+    doc.text('Tel: 08182246491, 07098141804', rightX, rightY, { width: 230, align: 'right' });
+    rightY += 14;
+    doc.text('Email: info@turningpointhealth.site', rightX, rightY, { width: 230, align: 'right' });
+    rightY += 14;
+    doc.text('Website: www.turningpointhealth.site', rightX, rightY, { width: 230, align: 'right' });
+
+    // Ensure the cursor drops safely below BOTH the image and the text block
+    doc.y = Math.max(afterImageY, rightY + 20);
     
-    // Broken into two lines as requested
-    doc.text('Email: info@turningpointhealth.site', rightX, textY); textY += 12;
-    doc.text('Website: www.turningpointhealth.site', rightX, textY);
-
-    // Push the cursor safely below the entire header section
-    doc.y = 125; 
-
-    // Draw the horizontal separator line exactly below the header
-    doc.moveTo(45, doc.y).lineTo(550, doc.y).lineWidth(1).strokeColor('#eeeeee').stroke();
+    // Draw the separator line exactly below the header
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
 
     // ==========================================
@@ -633,7 +633,6 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Oblique').fontSize(8).text('Verified By', 50, doc.y);
 };
 
-// --- ROUTES ---
 const downloadTestReport = asyncHandler(async (req, res) => {
     const testRequest = await TestRequest.findById(req.params.id)
         .populate('patient')
