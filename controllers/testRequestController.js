@@ -1,3 +1,4 @@
+
 // const asyncHandler = require("express-async-handler");
 // const bwipjs = require("bwip-js");
 // const TestRequest = require("../models/TestRequest");
@@ -31,43 +32,37 @@
 //     doc.on('pageAdded', addWatermark);
 
 //     // ==========================================
-//     // 1. HEADER (FULLY DYNAMIC LETTERHEAD)
+//     // 1. HEADER (FULL-WIDTH LETTERHEAD ONLY)
 //     // ==========================================
 //     doc.y = 30; // Start at the very top of the page
     
 //     try {
 //         if (fs.existsSync(letterheadPath)) {
-//             // By omitting absolute X and Y coordinates, PDFKit automatically centers the image 
-//             // AND calculates its exact height, pushing the doc.y cursor safely below it!
-//             doc.image(letterheadPath, { width: 500, align: 'center' }); 
+//             // We use the full width (520) so your new design fills the top of the A4 page perfectly.
+//             // By omitting X and Y coordinates here, PDFKit automatically places it at doc.y
+//             // and moves the cursor safely below it.
+//             doc.image(letterheadPath, { width: 520, align: 'center' }); 
 //         }
 //     } catch (err) {
-//         console.warn("Failed to load letterhead:", err.message);
+//         console.warn("Failed to load letterhead image:", err.message);
 //     }
 
-//     doc.moveDown(0.5);
-
-//     // ==========================================
-//     // 2. BOLD ADDRESS & PHONE NUMBERS
-//     // ==========================================
-//     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000')
-//        .text('5, Oladipo Coker Avenue, Off Durbar Road, Amuwo-Odofin Mile 2, Lagos.', { align: 'center' });
-    
-//     doc.fontSize(10).font('Helvetica-Bold')
-//        .text('Tel: 08182246491, 07098141804', { align: 'center' });
-
+//     // Since PDFKit automatically adjusted doc.y after the image, we just need a little breathing room.
 //     doc.moveDown(1);
     
-//     // Draw the separator line exactly below the address
+//     // Draw the separator line exactly below your new, complete letterhead image
 //     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
 //     doc.moveDown(1.5);
 
+//     // NOTE: All hardcoded address/phone/email text has been removed from here
+//     // because you are adding it directly to the letterhead.png file.
+
 //     // ==========================================
-//     // 3. PATIENT DETAILS (2-Column Layout)
+//     // 2. PATIENT DETAILS (2-Column Layout)
 //     // ==========================================
+//     // This section remains exactly the same as the base layout you liked.
 //     doc.fontSize(10).fillColor('#000000');
     
-//     // Grab the safe, auto-calculated Y position
 //     const startY = doc.y;
 
 //     // ----- Left Column -----
@@ -97,14 +92,14 @@
 //     doc.y = startY + 70; // Push cursor safely down past the entire patient details block
 
 //     // ==========================================
-//     // 4. TEST TITLE (Deep, Bold Orange)
+//     // 3. TEST TITLE (Deep, Bold Orange)
 //     // ==========================================
 //     doc.fontSize(15).font('Helvetica-Bold').fillColor('#C04000')
 //        .text(`${testRequest.template.testName.toUpperCase()} REPORT`, 50, doc.y, { align: 'center' });
 //     doc.moveDown(1.5);
 
 //     // ==========================================
-//     // 5. DYNAMIC RESULTS LAYOUT
+//     // 4. DYNAMIC RESULTS LAYOUT
 //     // ==========================================
 //     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000');
     
@@ -162,7 +157,7 @@
 //     }
 
 //     // ==========================================
-//     // 6. SIGNATURES
+//     // 5. SIGNATURES
 //     // ==========================================
 //     doc.moveDown(4);
 //     const scientistName = testRequest.verifiedBy ? `${testRequest.verifiedBy.firstName} ${testRequest.verifiedBy.lastName}` : 'Lab Scientist';
@@ -292,7 +287,6 @@
 // const getTestByBarcode = asyncHandler(async (req, res) => {
 //     const { labReference } = req.params;
 
-//     // Added referringDoctor to populate array just in case frontend needs it!
 //     const testRequest = await TestRequest.findOne({ labReference })
 //         .populate('patient', 'firstName lastName hospitalNumber gender age referringDoctor')
 //         .populate('template', 'testName category schemaDefinition');
@@ -450,7 +444,6 @@
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
 
-
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -506,13 +499,9 @@ const buildPDFContent = (doc, testRequest) => {
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
 
-    // NOTE: All hardcoded address/phone/email text has been removed from here
-    // because you are adding it directly to the letterhead.png file.
-
     // ==========================================
     // 2. PATIENT DETAILS (2-Column Layout)
     // ==========================================
-    // This section remains exactly the same as the base layout you liked.
     doc.fontSize(10).fillColor('#000000');
     
     const startY = doc.y;
@@ -532,16 +521,22 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Bold').text('Lab Reference:', 320, startY, { width: 90, continued: false });
     doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY);
     
-    doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 20, { width: 90, continued: false });
-    doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
+    // NEW: Date Registered (Uses the createdAt timestamp)
+    doc.font('Helvetica-Bold').text('Date Registered:', 320, startY + 20, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${new Date(testRequest.createdAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
 
-    // Referring Doctor placed safely directly under the Date Verified
+    // MOVED DOWN: Date Verified
+    doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 40, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 40);
+
+    // MOVED DOWN: Referring Doctor
     if (testRequest.patient.referringDoctor) {
-        doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 40, { width: 90, continued: false });
-        doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 40);
+        doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 60, { width: 90, continued: false });
+        doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 60);
     }
 
-    doc.y = startY + 70; // Push cursor safely down past the entire patient details block
+    // Increased this spacing to 90 to ensure it clears the newly added row
+    doc.y = startY + 90; 
 
     // ==========================================
     // 3. TEST TITLE (Deep, Bold Orange)
