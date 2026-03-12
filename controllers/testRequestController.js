@@ -444,6 +444,7 @@
 //     verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 // };
 
+
 const asyncHandler = require("express-async-handler");
 const bwipjs = require("bwip-js");
 const TestRequest = require("../models/TestRequest");
@@ -484,20 +485,18 @@ const buildPDFContent = (doc, testRequest) => {
     try {
         if (fs.existsSync(letterheadPath)) {
             // We use the full width (520) so your new design fills the top of the A4 page perfectly.
-            // By omitting X and Y coordinates here, PDFKit automatically places it at doc.y
-            // and moves the cursor safely below it.
             doc.image(letterheadPath, { width: 520, align: 'center' }); 
         }
     } catch (err) {
         console.warn("Failed to load letterhead image:", err.message);
     }
 
-    // Since PDFKit automatically adjusted doc.y after the image, we just need a little breathing room.
     doc.moveDown(1);
     
     // Draw the separator line exactly below your new, complete letterhead image
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
+
 
     // ==========================================
     // 2. PATIENT DETAILS (2-Column Layout)
@@ -521,19 +520,15 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Bold').text('Lab Reference:', 320, startY, { width: 90, continued: false });
     doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY);
     
-    // NEW: Date Registered (Uses the createdAt timestamp)
     doc.font('Helvetica-Bold').text('Date Registered:', 320, startY + 20, { width: 90, continued: false });
     doc.font('Helvetica').text(`${new Date(testRequest.createdAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
 
-    // MOVED DOWN: Date Verified
     doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 40, { width: 90, continued: false });
     doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 40);
 
-    // MOVED DOWN: Referring Doctor
-    if (testRequest.patient.referringDoctor) {
-        doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 60, { width: 90, continued: false });
-        doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 60);
-    }
+    // FIXED: Referring Doctor now ALWAYS shows. If blank, it defaults to "Self"
+    doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 60, { width: 90, continued: false });
+    doc.font('Helvetica').text(`${testRequest.patient.referringDoctor || 'Self'}`, 410, startY + 60);
 
     // Increased this spacing to 90 to ensure it clears the newly added row
     doc.y = startY + 90; 
