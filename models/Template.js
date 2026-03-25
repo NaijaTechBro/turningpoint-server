@@ -49,6 +49,10 @@ const templateSchema = new mongoose.Schema({
             },
             options: [{ type: String }], // Used if inputType is 'select'
             unit: { type: String }, 
+            footnote: { 
+    type: String, 
+    default: '' 
+  },
             referenceRange: { type: String } 
         }
     ],

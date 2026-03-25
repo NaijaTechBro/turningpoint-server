@@ -21,14 +21,17 @@ const sendTokenResponse = (user, statusCode, res) => {
     const { accessToken, refreshToken } = generateTokens(user._id, user.role);
     const baseOptions = getCookieOptions();
 
+    // Set BOTH cookies to expire in 7 Days
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
     res.cookie('refreshToken', refreshToken, {
         ...baseOptions,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 Days
+        expires: new Date(Date.now() + sevenDays), 
     });
 
     res.cookie('accessToken', accessToken, {
         ...baseOptions,
-        expires: new Date(Date.now() + 15 * 60 * 1000), // 15 Minutes
+        expires: new Date(Date.now() + sevenDays), // <-- FIXED: Now 7 Days instead of 15 mins!
     });
 
     res.status(statusCode).json({
@@ -42,6 +45,32 @@ const sendTokenResponse = (user, statusCode, res) => {
         }
     });
 };
+
+// const sendTokenResponse = (user, statusCode, res) => {
+//     const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+//     const baseOptions = getCookieOptions();
+
+//     res.cookie('refreshToken', refreshToken, {
+//         ...baseOptions,
+//         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 Days
+//     });
+
+//     res.cookie('accessToken', accessToken, {
+//         ...baseOptions,
+//         expires: new Date(Date.now() + 15 * 60 * 1000), // 15 Minutes
+//     });
+
+//     res.status(statusCode).json({
+//         success: true,
+//         user: {
+//             _id: user._id,
+//             firstName: user.firstName,
+//             lastName: user.lastName,
+//             email: user.email,
+//             role: user.role
+//         }
+//     });
+// };
 
 /* --------------------------------
    LOGIN USER 
