@@ -14,6 +14,11 @@ const testRequestSchema = new mongoose.Schema({
         enum: ['PENDING', 'RESULT_ENTERED', 'VERIFIED', 'DELIVERED'], 
         default: 'PENDING' 
     },
+    // Add this inside your TestRequest schema
+  comments: {
+    type: String,
+    default: ""
+  },
     // The dynamic payload matching the Template's schemaDefinition
     resultData: { type: mongoose.Schema.Types.Mixed, default: {} },
     

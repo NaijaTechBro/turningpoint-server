@@ -1,4 +1,5 @@
 
+
 // const asyncHandler = require("express-async-handler");
 // const bwipjs = require("bwip-js");
 // const TestRequest = require("../models/TestRequest");
@@ -39,28 +40,22 @@
 //     try {
 //         if (fs.existsSync(letterheadPath)) {
 //             // We use the full width (520) so your new design fills the top of the A4 page perfectly.
-//             // By omitting X and Y coordinates here, PDFKit automatically places it at doc.y
-//             // and moves the cursor safely below it.
 //             doc.image(letterheadPath, { width: 520, align: 'center' }); 
 //         }
 //     } catch (err) {
 //         console.warn("Failed to load letterhead image:", err.message);
 //     }
 
-//     // Since PDFKit automatically adjusted doc.y after the image, we just need a little breathing room.
 //     doc.moveDown(1);
     
 //     // Draw the separator line exactly below your new, complete letterhead image
 //     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
 //     doc.moveDown(1.5);
 
-//     // NOTE: All hardcoded address/phone/email text has been removed from here
-//     // because you are adding it directly to the letterhead.png file.
 
 //     // ==========================================
 //     // 2. PATIENT DETAILS (2-Column Layout)
 //     // ==========================================
-//     // This section remains exactly the same as the base layout you liked.
 //     doc.fontSize(10).fillColor('#000000');
     
 //     const startY = doc.y;
@@ -80,16 +75,18 @@
 //     doc.font('Helvetica-Bold').text('Lab Reference:', 320, startY, { width: 90, continued: false });
 //     doc.font('Helvetica').text(`${testRequest.labReference}`, 410, startY);
     
-//     doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 20, { width: 90, continued: false });
-//     doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
+//     doc.font('Helvetica-Bold').text('Date Registered:', 320, startY + 20, { width: 90, continued: false });
+//     doc.font('Helvetica').text(`${new Date(testRequest.createdAt).toLocaleDateString('en-GB')}`, 410, startY + 20);
 
-//     // Referring Doctor placed safely directly under the Date Verified
-//     if (testRequest.patient.referringDoctor) {
-//         doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 40, { width: 90, continued: false });
-//         doc.font('Helvetica').text(`${testRequest.patient.referringDoctor}`, 410, startY + 40);
-//     }
+//     doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 40, { width: 90, continued: false });
+//     doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 40);
 
-//     doc.y = startY + 70; // Push cursor safely down past the entire patient details block
+//     // FIXED: Referring Doctor now ALWAYS shows. If blank, it defaults to "Self"
+//     doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 60, { width: 90, continued: false });
+//     doc.font('Helvetica').text(`${testRequest.patient.referringDoctor || 'Self'}`, 410, startY + 60);
+
+//     // Increased this spacing to 90 to ensure it clears the newly added row
+//     doc.y = startY + 90; 
 
 //     // ==========================================
 //     // 3. TEST TITLE (Deep, Bold Orange)
@@ -484,7 +481,6 @@ const buildPDFContent = (doc, testRequest) => {
     
     try {
         if (fs.existsSync(letterheadPath)) {
-            // We use the full width (520) so your new design fills the top of the A4 page perfectly.
             doc.image(letterheadPath, { width: 520, align: 'center' }); 
         }
     } catch (err) {
@@ -496,7 +492,6 @@ const buildPDFContent = (doc, testRequest) => {
     // Draw the separator line exactly below your new, complete letterhead image
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
     doc.moveDown(1.5);
-
 
     // ==========================================
     // 2. PATIENT DETAILS (2-Column Layout)
@@ -526,11 +521,10 @@ const buildPDFContent = (doc, testRequest) => {
     doc.font('Helvetica-Bold').text('Date Verified:', 320, startY + 40, { width: 90, continued: false });
     doc.font('Helvetica').text(`${new Date(testRequest.updatedAt).toLocaleDateString('en-GB')}`, 410, startY + 40);
 
-    // FIXED: Referring Doctor now ALWAYS shows. If blank, it defaults to "Self"
+    // Referring Doctor now ALWAYS shows. If blank, it defaults to "Self"
     doc.font('Helvetica-Bold').text('Referring Dr:', 320, startY + 60, { width: 90, continued: false });
     doc.font('Helvetica').text(`${testRequest.patient.referringDoctor || 'Self'}`, 410, startY + 60);
 
-    // Increased this spacing to 90 to ensure it clears the newly added row
     doc.y = startY + 90; 
 
     // ==========================================
@@ -596,6 +590,26 @@ const buildPDFContent = (doc, testRequest) => {
                 doc.y = currentY + rowHeight + 10;
             }
         });
+    }
+
+ // ==========================================
+    // 4.5 LAB SCIENTIST REMARKS / WRITE-UP
+    // ==========================================
+    if (testRequest.comments && testRequest.comments.trim() !== '') {
+        doc.moveDown(2);
+        
+        if (doc.y > doc.page.height - doc.page.margins.bottom - 80) {
+            doc.addPage();
+        }
+
+        // Prints a bold "Remarks:" followed by the tech's custom write-up
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000')
+           .text('Remarks: ', 50, doc.y, { continued: true });
+           
+        doc.font('Helvetica').text(testRequest.comments, { 
+               width: 450, 
+               align: 'justify' 
+           });
     }
 
     // ==========================================
@@ -731,7 +745,7 @@ const getTestByBarcode = asyncHandler(async (req, res) => {
 
     const testRequest = await TestRequest.findOne({ labReference })
         .populate('patient', 'firstName lastName hospitalNumber gender age referringDoctor')
-        .populate('template', 'testName category schemaDefinition');
+        .populate('template', 'testName category schemaDefinition footnote'); // Ensure footnote populates!
 
     if (!testRequest) {
         res.status(404);
@@ -744,9 +758,34 @@ const getTestByBarcode = asyncHandler(async (req, res) => {
     });
 });
 
+// const enterTestResult = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
+//     const { resultData } = req.body; 
+
+//     const testRequest = await TestRequest.findById(id);
+
+//     if (!testRequest) {
+//         res.status(404);
+//         throw new Error("Test request not found");
+//     }
+
+//     testRequest.resultData = resultData;
+//     testRequest.status = 'RESULT_ENTERED';
+//     testRequest.enteredBy = req.user.id; 
+
+//     const updatedTest = await testRequest.save();
+
+//     res.status(200).json({
+//         success: true,
+//         message: "Results saved successfully. Ready for Verification.",
+//         data: updatedTest
+//     });
+// });
+
 const enterTestResult = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { resultData } = req.body; 
+    // We now accept 'comments' from the frontend alongside the resultData!
+    const { resultData, comments } = req.body; 
 
     const testRequest = await TestRequest.findById(id);
 
@@ -756,6 +795,11 @@ const enterTestResult = asyncHandler(async (req, res) => {
     }
 
     testRequest.resultData = resultData;
+    // Save the tech's custom write up!
+    if (comments !== undefined) {
+        testRequest.comments = comments; 
+    }
+    
     testRequest.status = 'RESULT_ENTERED';
     testRequest.enteredBy = req.user.id; 
 
@@ -763,7 +807,7 @@ const enterTestResult = asyncHandler(async (req, res) => {
 
     res.status(200).json({
         success: true,
-        message: "Results saved successfully. Ready for Verification.",
+        message: "Results and remarks saved successfully.",
         data: updatedTest
     });
 });
@@ -788,6 +832,28 @@ const verifyTestResult = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Test results verified and locked. Ready for printing.",
+        data: testRequest
+    });
+});
+
+// ==================================================
+// NEW: UNLOCK VERIFIED TEST RESULT
+// ==================================================
+const unlockTestResult = asyncHandler(async (req, res) => {
+    const testRequest = await TestRequest.findById(req.params.id);
+
+    if (!testRequest) {
+        res.status(404);
+        throw new Error("Test request not found");
+    }
+
+    // Simply roll the status back so the scientist can edit it again!
+    testRequest.status = 'RESULT_ENTERED';
+    await testRequest.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Test unlocked. You can now edit the results.",
         data: testRequest
     });
 });
@@ -881,7 +947,8 @@ const trackTestPublic = asyncHandler(async (req, res) => {
     });
 });
 
+// Added unlockTestResult here!
 module.exports = { 
     createTestRequest, getTestByBarcode, enterTestResult, 
-    verifyTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
+    verifyTestResult, unlockTestResult, downloadTestReport, sendReportToPatient, getAllTestRequests, getPatientTestRequests, trackTestPublic, downloadPublicTestReport,
 };

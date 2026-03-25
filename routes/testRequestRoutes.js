@@ -12,7 +12,8 @@ const {
     downloadPublicTestReport, 
     sendReportToPatient,
     getPatientTestRequests,
-    trackTestPublic 
+    trackTestPublic ,
+    unlockTestResult,
 } = require("../controllers/testRequestController");
 const { protect, authorize } = require("../middlewares/authMiddleware");
 
@@ -28,7 +29,9 @@ router.get("/public/pdf/:id", downloadPublicTestReport); // <-- FIXED: Attached 
 router.post("/", protect, authorize('Admin', 'Receptionist'), createTestRequest);
 router.get("/all", protect, authorize('Admin', 'Receptionist', 'LabScientist', 'Sonographer', 'LabTechnician'), getAllTestRequests);
 router.get("/patient/:patientId", protect, authorize('Admin', 'Receptionist', 'LabScientist', 'Sonographer', 'LabTechnician'), getPatientTestRequests);
+// Add this line below your existing routes in testRequestRoutes.js
 
+router.put("/:id/unlock", protect, authorize('Admin', 'LabScientist', 'Sonographer', 'LabTechnician'), unlockTestResult);
 // Dynamic Routes (These catch anything else, so they must be at the bottom)
 router.get("/:labReference", protect, authorize('Admin', 'LabScientist', 'Sonographer', 'LabTechnician'), getTestByBarcode);
 router.put("/:id/results", protect, authorize('Admin', 'LabScientist', 'Sonographer', 'LabTechnician'), enterTestResult);
