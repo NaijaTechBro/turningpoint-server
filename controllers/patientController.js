@@ -73,7 +73,7 @@ const getPatients = asyncHandler(async (req, res) => {
     const patients = await Patient.find()
         .sort("-createdAt")
         .skip(skip)
-        .limit(limit);
+        .limit(limit).lean();
 
     const total = await Patient.countDocuments();
 
@@ -101,7 +101,7 @@ const searchPatients = asyncHandler(async (req, res) => {
             { hospitalNumber: { $regex: q, $options: 'i' } },
             { phone: { $regex: q, $options: 'i' } }
         ]
-    }).limit(10);
+    }).limit(10).lean();
 
     res.json({ success: true, data: patients });
 });
