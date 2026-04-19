@@ -465,7 +465,7 @@ const getAllTestRequests = asyncHandler(async (req, res) => {
     const testRequests = await TestRequest.find()
         .populate('patient', 'firstName lastName hospitalNumber email phone referringDoctor')
         .populate('template', 'testName category')
-        .sort('-createdAt'); 
+        .sort('-createdAt').lean(); 
 
     res.status(200).json({
         success: true,
@@ -477,7 +477,7 @@ const getAllTestRequests = asyncHandler(async (req, res) => {
 const getPatientTestRequests = asyncHandler(async (req, res) => {
     const tests = await TestRequest.find({ patient: req.params.patientId })
         .populate('template', 'testName category')
-        .sort('-createdAt');
+        .sort('-createdAt').lean();
 
     res.status(200).json({ success: true, count: tests.length, data: tests });
 });
