@@ -132,7 +132,6 @@ const updatePatient = asyncHandler(async (req, res) => {
         throw new Error("Patient record not found");
     }
 
-    // Explicitly handle all fields, allowing empty strings to overwrite existing data if the receptionist deletes it
     const updatedData = {
         firstName: req.body.firstName || patient.firstName,
         lastName: req.body.lastName || patient.lastName,
