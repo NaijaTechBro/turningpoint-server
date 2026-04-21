@@ -149,7 +149,6 @@ const updatePatient = asyncHandler(async (req, res) => {
     // If dateReferred is passed as an empty string from the frontend, remove the field from the update payload
     if (updatedData.dateReferred === '') {
         delete updatedData.dateReferred;
-        // Also unset it in the database
         await Patient.updateOne({ _id: req.params.id }, { $unset: { dateReferred: 1 } });
     }
 
