@@ -314,30 +314,6 @@ const getTestByBarcode = asyncHandler(async (req, res) => {
     });
 });
 
-// const enterTestResult = asyncHandler(async (req, res) => {
-//     const { id } = req.params;
-//     const { resultData } = req.body; 
-
-//     const testRequest = await TestRequest.findById(id);
-
-//     if (!testRequest) {
-//         res.status(404);
-//         throw new Error("Test request not found");
-//     }
-
-//     testRequest.resultData = resultData;
-//     testRequest.status = 'RESULT_ENTERED';
-//     testRequest.enteredBy = req.user.id; 
-
-//     const updatedTest = await testRequest.save();
-
-//     res.status(200).json({
-//         success: true,
-//         message: "Results saved successfully. Ready for Verification.",
-//         data: updatedTest
-//     });
-// });
-
 const enterTestResult = asyncHandler(async (req, res) => {
     const { id } = req.params;
     // We now accept 'comments' from the frontend alongside the resultData!
