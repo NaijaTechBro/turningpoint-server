@@ -47,7 +47,7 @@ const templateSchema = new mongoose.Schema({
                 enum: ['text', 'number', 'select', 'grid', 'textarea'], // <-- ADDED 'textarea' HERE
                 required: true 
             },
-            options: [{ type: String }], // Used if inputType is 'select'
+            options: [{ type: String }], 
             unit: { type: String }, 
             footnote: { 
     type: String, 
