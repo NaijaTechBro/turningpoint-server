@@ -316,7 +316,7 @@ const getTestByBarcode = asyncHandler(async (req, res) => {
 
 const enterTestResult = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    // We now accept 'comments' from the frontend alongside the resultData!
+    // We now accep
     const { resultData, comments } = req.body; 
 
     const testRequest = await TestRequest.findById(id);
